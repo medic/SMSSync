@@ -42,6 +42,8 @@ import org.addhen.smssync.R;
 import org.addhen.smssync.data.Database;
 import org.addhen.smssync.data.Messages;
 import org.addhen.smssync.net.MainHttpClient;
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -92,6 +94,9 @@ public class Util {
     public static final int READ_THREAD = 1;
 
     public static HashMap<String, String> smsMap = new HashMap<String, String>();
+    public static final int MAX_CALLBACK_RECURSION = 5;
+
+    private static int callbackRecursion = 0;
 
     private static NetworkInfo networkInfo;
 
@@ -694,6 +699,43 @@ public class Util {
                     showToast(context, R.string.no_task);
                 }
             }
+        }
+    }
+
+    /**
+     * Does a HTTP request based on callback configuration
+     * 
+     * @param String resp - The JSON payload response, that includes a callback
+     * attribute.  
+     */
+    public static void processResponseCallback(Context context, String resp) {
+        Log.i(CLASS_TAG, "processResonseCallback(): response: " + resp);
+        callbackRecursion++;
+        String nextResp = "";
+        try {
+            JSONObject jsonResponse = new JSONObject(resp).getJSONObject("payload");
+            Log.i(CLASS_TAG, " callback:" + jsonResponse.has("callback"));
+            if (jsonResponse.has("callback") && MAX_CALLBACK_RECURSION > callbackRecursion) {
+                JSONObject callback = jsonResponse.getJSONObject("callback");
+                Log.i(CLASS_TAG, " callback:" + callback);
+                JSONObject params = callback.getJSONObject("params");
+                // Create a NameValuePair out of the JSONObject + a name
+                List<NameValuePair> pairs = new ArrayList<NameValuePair>(2);
+                pairs.add(new BasicNameValuePair("json", params.toString()));
+                String url = callback.getString("url");
+                String method = callback.getString("method");
+                Log.i(CLASS_TAG, " params:" + params.toString());
+                Log.i(CLASS_TAG, " url:" + url);
+                if (method == "post") {
+                    nextResp = MainHttpClient.postToWebService(url, pairs);
+                } else if (method == "get") {
+                    nextResp = MainHttpClient.getFromWebService(url);
+                }
+                Log.i(CLASS_TAG, " next response:" + nextResp);
+                processResponseCallback(context, nextResp);
+            }
+        } catch (JSONException e) {
+            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
         }
     }
 
