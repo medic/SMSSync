@@ -94,9 +94,6 @@ public class Util {
     public static final int READ_THREAD = 1;
 
     public static HashMap<String, String> smsMap = new HashMap<String, String>();
-    public static final int MAX_CALLBACK_RECURSION = 5;
-
-    private static int callbackRecursion = 0;
 
     private static NetworkInfo networkInfo;
 
@@ -253,6 +250,23 @@ public class Util {
             return false;
         }
 
+    }
+
+    /**
+     * Extract callback JSON data
+     * 
+     * @apram json_data - The json data to be formatted.
+     * @return boolean
+     */
+    public static boolean extractCallbackJSON(String json_data) {
+        Log.i(CLASS_TAG, "extracCallbackJSON(): Extracting callback JSON data" + json_data);
+        try {
+            JSONObject test = new JSONObject(json_data).getJSONObject("callback");
+            return true;
+        } catch (JSONException e) {
+            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -703,40 +717,68 @@ public class Util {
     }
 
     /**
+     * @return String url - The URL for an HTTPPost object
+     */
+    public static String getCallbackURL(JSONObject callback) {
+        try {
+            JSONObject options = callback.getJSONObject("options");
+            String host = options.getString("host");
+            String port = options.getString("port");
+            String path = options.getString("path");
+            return "http://" + host + ":" + port + path;
+        } catch (JSONException e) {
+            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+        }
+        return null;
+    };
+
+    /**
+     * @return String method - The method (POST/GET) for an HTTPPost object
+     */
+    public static String getCallbackMethod(JSONObject callback) {
+        try {
+            JSONObject options = callback.getJSONObject("options");
+            return options.getString("method");
+        } catch (JSONException e) {
+            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+        }
+        return null;
+    };
+
+    /**
+     * @return String data - The data/entity for an HTTPPost object
+     */
+    public static String getCallbackData(JSONObject callback) {
+        try {
+            return callback.getJSONObject("data").toString();
+        } catch (JSONException e) {
+            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+        }
+        return null;
+    };
+
+    /**
      * Does a HTTP request based on callback configuration
      * 
-     * @param String resp - The JSON payload response, that includes a callback
-     * attribute.  
+     * @param boolean - Return the call to postJSONToWebService
      */
-    public static void processResponseCallback(Context context, String resp) {
-        Log.i(CLASS_TAG, "processResonseCallback(): response: " + resp);
-        callbackRecursion++;
-        String nextResp = "";
+    public static boolean processResponseCallback(Context context, String resp) {
+        Log.i(CLASS_TAG, "processResponseCallback(): response: " + resp);
         try {
-            JSONObject jsonResponse = new JSONObject(resp).getJSONObject("payload");
-            Log.i(CLASS_TAG, " callback:" + jsonResponse.has("callback"));
-            if (jsonResponse.has("callback") && MAX_CALLBACK_RECURSION > callbackRecursion) {
-                JSONObject callback = jsonResponse.getJSONObject("callback");
-                Log.i(CLASS_TAG, " callback:" + callback);
-                JSONObject params = callback.getJSONObject("params");
-                // Create a NameValuePair out of the JSONObject + a name
-                List<NameValuePair> pairs = new ArrayList<NameValuePair>(2);
-                pairs.add(new BasicNameValuePair("json", params.toString()));
-                String url = callback.getString("url");
-                String method = callback.getString("method");
-                Log.i(CLASS_TAG, " params:" + params.toString());
-                Log.i(CLASS_TAG, " url:" + url);
-                if (method == "post") {
-                    nextResp = MainHttpClient.postToWebService(url, pairs);
-                } else if (method == "get") {
-                    nextResp = MainHttpClient.getFromWebService(url);
+            boolean callback = extractCallbackJSON(resp);
+            if (callback) {
+                JSONObject cb = new JSONObject(resp).getJSONObject("callback");
+                if (getCallbackMethod(cb) == "POST") {
+                    return MainHttpClient.postJSONToWebService(
+                        getCallbackURL(cb), 
+                        getCallbackData(cb),
+                        context);
                 }
-                Log.i(CLASS_TAG, " next response:" + nextResp);
-                processResponseCallback(context, nextResp);
             }
         } catch (JSONException e) {
             Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
         }
+        return true;
     }
 
     /**

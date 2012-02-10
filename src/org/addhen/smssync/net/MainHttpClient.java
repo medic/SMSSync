@@ -36,6 +36,7 @@ import org.addhen.smssync.util.Util;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
@@ -53,6 +54,9 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 import org.apache.http.protocol.HTTP;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.content.Context;
 
@@ -208,6 +212,60 @@ public class MainHttpClient {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    /**
+     * Does a HTTP POST request
+     * 
+     * @param String url - the URL to do the HTTP POST
+     * @throws MalformedURLException
+     * @throws IOException
+     * @return boolean
+     */
+    public static boolean postJSONToWebService(String url, String json, Context context) {
+        // Create a new HttpClient and Post Header
+        HttpPost httppost = new HttpPost(url);
+        //se.setContentEncoding(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
+        //TODO Header "Content-Type": "application/json; charset=utf-8"
+        try {
+            StringEntity data = new StringEntity(json,"UTF-8");
+            data.setContentType("application/json; charset=utf-8");
+            httppost.setEntity(data);
+
+            // Execute HTTP Post Request
+            HttpResponse response = httpclient.execute(httppost);
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode == 200 || statusCode == 201) {
+                String resp = getText(response);
+                boolean success = Util.extractPayloadJSON(resp);
+                boolean callback = Util.extractCallbackJSON(resp);
+                if (success) {
+                    // auto response message is enabled to be received from the
+                    // server.
+                    if (Prefs.enableReplyFrmServer) {
+                        Util.sendResponseFromServer(context, resp);
+                    }
+                } 
+                if (callback) {
+                    try {
+                        JSONObject cb = new JSONObject(resp).getJSONObject("callback");
+                        return postJSONToWebService(
+                            Util.getCallbackURL(cb),
+                            Util.getCallbackData(cb),
+                            context);
+                    } catch (JSONException e) {
+                        return false;
+                    }
+                }
+            } else {
+                return false;
+            }
+        } catch (ClientProtocolException e) {
+            return false;
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
     }
 
     /**
