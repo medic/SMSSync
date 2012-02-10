@@ -42,6 +42,7 @@ import org.addhen.smssync.R;
 import org.addhen.smssync.data.Database;
 import org.addhen.smssync.data.Messages;
 import org.addhen.smssync.net.MainHttpClient;
+import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
@@ -239,7 +240,7 @@ public class Util {
      * @return String
      */
     public static boolean extractPayloadJSON(String json_data) {
-        Log.i(CLASS_TAG, "extracPayloadJSON(): Extracting payload JSON data" + json_data);
+        Log.i(CLASS_TAG, "extractPayloadJSON(): Extracting payload JSON data" + json_data);
         try {
 
             jsonObject = new JSONObject(json_data);
@@ -259,7 +260,7 @@ public class Util {
      * @return boolean
      */
     public static boolean extractCallbackJSON(String json_data) {
-        Log.i(CLASS_TAG, "extracCallbackJSON(): Extracting callback JSON data" + json_data);
+        Log.i(CLASS_TAG, "extractCallbackJSON(): Extracting callback JSON data" + json_data);
         try {
             JSONObject test = new JSONObject(json_data).getJSONObject("callback");
             return true;
@@ -708,6 +709,8 @@ public class Util {
                         showToast(context, R.string.no_task);
                     }
 
+                    processResponseCallback(context, response); 
+
                 } catch (JSONException e) {
                     Log.e(CLASS_TAG, "Error: " + e.getMessage());
                     showToast(context, R.string.no_task);
@@ -717,11 +720,14 @@ public class Util {
     }
 
     /**
-     * @return String url - The URL for an HTTPPost object
+     * @param JSONObject callback - JSONObject representing the callback 
+     * @return String url - The URL from the callback response
      */
     public static String getCallbackURL(JSONObject callback) {
+        Log.i(CLASS_TAG, "getCallbackURL:");
         try {
             JSONObject options = callback.getJSONObject("options");
+            Log.i(CLASS_TAG, "getCallbackURL: options" + options);
             String host = options.getString("host");
             String port = options.getString("port");
             String path = options.getString("path");
@@ -733,11 +739,14 @@ public class Util {
     };
 
     /**
-     * @return String method - The method (POST/GET) for an HTTPPost object
+     * @param JSONObject callback - JSONObject representing the callback 
+     * @return String method - The method string from the callback options
      */
     public static String getCallbackMethod(JSONObject callback) {
+        Log.i(CLASS_TAG, "getCallbackMethod()");
         try {
             JSONObject options = callback.getJSONObject("options");
+            Log.i(CLASS_TAG, "getCallbackMethod: options" + options);
             return options.getString("method");
         } catch (JSONException e) {
             Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
@@ -746,11 +755,14 @@ public class Util {
     };
 
     /**
-     * @return String data - The data/entity for an HTTPPost object
+     * @param JSONObject callback - JSONObject representing the callback 
+     * @return String data - The data/entity of the callback json
      */
     public static String getCallbackData(JSONObject callback) {
+        Log.i(CLASS_TAG, "getCallbackData()");
         try {
-            return callback.getJSONObject("data").toString();
+            String data = callback.getJSONObject("data").toString();
+            return data;
         } catch (JSONException e) {
             Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
         }
@@ -758,27 +770,40 @@ public class Util {
     };
 
     /**
-     * Does a HTTP request based on callback configuration
+     * Does a HTTP request based on callback json configuration data
      * 
-     * @param boolean - Return the call to postJSONToWebService
+     * @param context - Context object
+     * @param resp - Response string 
      */
-    public static boolean processResponseCallback(Context context, String resp) {
+    public static void processResponseCallback(Context context, String resp) {
         Log.i(CLASS_TAG, "processResponseCallback(): response: " + resp);
         try {
+            boolean success = extractPayloadJSON(resp);
+            if (success) {
+                if (Prefs.enableReplyFrmServer) {
+                    sendResponseFromServer(context, resp);
+                }
+            } 
             boolean callback = extractCallbackJSON(resp);
             if (callback) {
                 JSONObject cb = new JSONObject(resp).getJSONObject("callback");
-                if (getCallbackMethod(cb) == "POST") {
-                    return MainHttpClient.postJSONToWebService(
-                        getCallbackURL(cb), 
-                        getCallbackData(cb),
-                        context);
+                if (getCallbackMethod(cb).equals("POST")) {
+                    try {
+                        HttpResponse r = MainHttpClient.postJSON(
+                            getCallbackURL(cb), 
+                            getCallbackData(cb));
+                        String body = MainHttpClient.getText(r);
+                        processResponseCallback(context, body);
+                    } catch (IOException e) {
+                        Log.e(CLASS_TAG, "IOException: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (JSONException e) {
             Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+            e.printStackTrace();
         }
-        return true;
     }
 
     /**

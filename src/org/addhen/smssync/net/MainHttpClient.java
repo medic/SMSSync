@@ -59,6 +59,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.util.Log;
 
 public class MainHttpClient {
 
@@ -69,6 +70,8 @@ public class MainHttpClient {
     private int timeoutConnection = 60000;
 
     private int timeoutSocket = 60000;
+
+    private static final String CLASS_TAG = MainHttpClient.class.getSimpleName();
 
     public MainHttpClient() {
         httpParameters = new BasicHttpParams();
@@ -119,6 +122,24 @@ public class MainHttpClient {
             return response;
 
         } catch (final Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static HttpResponse postJSON(String url, String json) throws IOException {
+        Log.i(CLASS_TAG, "postJSON: url: " + url);
+        try {
+            final HttpPost httppost = new HttpPost(url);
+            StringEntity data = new StringEntity(json,"UTF-8");
+            data.setContentType("application/json; charset=utf-8");
+            httppost.setEntity(data);
+            httppost.addHeader("User-Agent", "SmsSync-Android/1.0)");
+            HttpResponse response = httpclient.execute(httppost);
+            return response;
+        } catch (final Exception e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -214,59 +235,6 @@ public class MainHttpClient {
         }
     }
 
-    /**
-     * Does a HTTP POST request
-     * 
-     * @param String url - the URL to do the HTTP POST
-     * @throws MalformedURLException
-     * @throws IOException
-     * @return boolean
-     */
-    public static boolean postJSONToWebService(String url, String json, Context context) {
-        // Create a new HttpClient and Post Header
-        HttpPost httppost = new HttpPost(url);
-        //se.setContentEncoding(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
-        //TODO Header "Content-Type": "application/json; charset=utf-8"
-        try {
-            StringEntity data = new StringEntity(json,"UTF-8");
-            data.setContentType("application/json; charset=utf-8");
-            httppost.setEntity(data);
-
-            // Execute HTTP Post Request
-            HttpResponse response = httpclient.execute(httppost);
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode == 200 || statusCode == 201) {
-                String resp = getText(response);
-                boolean success = Util.extractPayloadJSON(resp);
-                boolean callback = Util.extractCallbackJSON(resp);
-                if (success) {
-                    // auto response message is enabled to be received from the
-                    // server.
-                    if (Prefs.enableReplyFrmServer) {
-                        Util.sendResponseFromServer(context, resp);
-                    }
-                } 
-                if (callback) {
-                    try {
-                        JSONObject cb = new JSONObject(resp).getJSONObject("callback");
-                        return postJSONToWebService(
-                            Util.getCallbackURL(cb),
-                            Util.getCallbackData(cb),
-                            context);
-                    } catch (JSONException e) {
-                        return false;
-                    }
-                }
-            } else {
-                return false;
-            }
-        } catch (ClientProtocolException e) {
-            return false;
-        } catch (IOException e) {
-            return false;
-        }
-        return true;
-    }
 
     /**
      * Does a HTTP POST request
