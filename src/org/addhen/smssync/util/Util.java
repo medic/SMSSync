@@ -240,12 +240,10 @@ public class Util {
      * @return String
      */
     public static boolean extractPayloadJSON(String json_data) {
-        Log.i(CLASS_TAG, "extractPayloadJSON(): Extracting payload JSON data" + json_data);
+        Log.i(CLASS_TAG, "extractPayloadJSON()" );
         try {
-
             jsonObject = new JSONObject(json_data);
             return jsonObject.getJSONObject("payload").getBoolean("success");
-
         } catch (JSONException e) {
             Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
             return false;
