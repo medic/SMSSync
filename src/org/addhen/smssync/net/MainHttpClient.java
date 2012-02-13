@@ -179,30 +179,17 @@ public class MainHttpClient {
             if (statusCode == 200 || statusCode == 201) {
                 String resp = getText(response);
                 boolean success = Util.extractPayloadJSON(resp);
-
+                Util.processResponseCallback(context, resp);
                 if (success) {
-                    // auto response message is enabled to be received from the
-                    // server.
-                    if (Prefs.enableReplyFrmServer) {
-                        Util.sendResponseFromServer(context, resp);
-                        Util.processResponseCallback(context, resp);
-                    }
-
                     return true;
-                } else {
-                    return false;
                 }
-
-            } else {
-                return false;
             }
-
+            return false;
         } catch (ClientProtocolException e) {
             return false;
         } catch (IOException e) {
             return false;
         }
-
     }
 
 

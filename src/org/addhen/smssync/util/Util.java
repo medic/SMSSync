@@ -811,7 +811,7 @@ public class Util {
      * @param String response - the response from the server.
      */
     public static void sendResponseFromServer(Context context, String response) {
-        Log.i(CLASS_TAG, "performResponseFromServer(): " + " response:" + response);
+        Log.i(CLASS_TAG, "sendResponseFromServer(): " + " response:" + response);
 
         if (!TextUtils.isEmpty(response) && response != null) {
 
