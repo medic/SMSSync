@@ -725,12 +725,11 @@ public class Util {
         Log.i(CLASS_TAG, "getCallbackURL:");
         try {
             JSONObject options = callback.getJSONObject("options");
-            Log.i(CLASS_TAG, "getCallbackURL: options" + options);
             String host = options.getString("host");
             String port = options.getString("port");
             String path = options.getString("path");
             String url = "";
-            if (port == "null" || port == "") {
+            if (port == "null" || TextUtils.isEmpty(port)) {
                 url = "http://" + host + path;
             } else {
                 url = "http://" + host + ":" + port + path;

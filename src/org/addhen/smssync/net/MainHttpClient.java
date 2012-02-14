@@ -208,16 +208,21 @@ public class MainHttpClient {
         try {
             // Execute HTTP Get Request
             HttpResponse response = httpclient.execute(httpGet);
+            int statusCode = response.getStatusLine().getStatusCode();
+            Log.i(CLASS_TAG, "getFromWebService Status Code: " + statusCode);
+            String resp = getText(response);
 
-            if (response.getStatusLine().getStatusCode() == 200) {
-                return getText(response);
+            if (statusCode == 200 || statusCode == 304) {
+                return resp;
             } else {
                 return "";
             }
 
         } catch (ClientProtocolException e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             return null;
         } catch (IOException e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             return null;
         }
     }
@@ -270,7 +275,7 @@ public class MainHttpClient {
         try {
             text = getText(response.getEntity().getContent());
         } catch (final Exception ex) {
-
+            Log.e(CLASS_TAG, "getText Exception: " + ex.getMessage());
         }
         return text;
     }
