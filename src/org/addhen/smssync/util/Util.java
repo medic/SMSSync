@@ -729,7 +729,14 @@ public class Util {
             String host = options.getString("host");
             String port = options.getString("port");
             String path = options.getString("path");
-            return "http://" + host + ":" + port + path;
+            String url = "";
+            if (port == "null" || port == "") {
+                url = "http://" + host + path;
+            } else {
+                url = "http://" + host + ":" + port + path;
+            }
+            Log.i(CLASS_TAG, "callback URL is: " + url);
+            return url;
         } catch (JSONException e) {
             Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
         }
