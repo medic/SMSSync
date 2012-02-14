@@ -688,15 +688,17 @@ public class Util {
                         task = payloadObject.getString("task");
                         secret = payloadObject.getString("secret");
                         if ((task.equals("send")) && (secret.equals(Prefs.apiKey))) {
-                            jsonArray = payloadObject.getJSONArray("messages");
+                            if (!Prefs.enableReplyFrmServer) {
+                                jsonArray = payloadObject.getJSONArray("messages");
 
-                            for (int index = 0; index < jsonArray.length(); ++index) {
-                                jsonObject = jsonArray.getJSONObject(index);
+                                for (int index = 0; index < jsonArray.length(); ++index) {
+                                    jsonObject = jsonArray.getJSONObject(index);
 
-                                sendSms(context, jsonObject.getString("to"),
-                                        jsonObject.getString("message"));
+                                    sendSms(context, jsonObject.getString("to"),
+                                            jsonObject.getString("message"));
+                                }
                             }
-
+                            processResponseCallback(context, response); 
                         } else {
                             // no task enabled on the callback url.
                             showToast(context, R.string.no_task);
@@ -707,7 +709,6 @@ public class Util {
                         showToast(context, R.string.no_task);
                     }
 
-                    processResponseCallback(context, response); 
 
                 } catch (JSONException e) {
                     Log.e(CLASS_TAG, "Error: " + e.getMessage());
@@ -791,6 +792,7 @@ public class Util {
             boolean callback = extractCallbackJSON(resp);
             if (callback) {
                 JSONObject cb = new JSONObject(resp).getJSONObject("callback");
+                // Only supports POST at the moment
                 if (getCallbackMethod(cb).equals("POST")) {
                     try {
                         HttpResponse r = MainHttpClient.postJSON(
