@@ -41,6 +41,7 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.conn.params.ConnManagerPNames;
 import org.apache.http.conn.params.ConnPerRouteBean;
 import org.apache.http.conn.scheme.PlainSocketFactory;
@@ -141,6 +142,23 @@ public class MainHttpClient {
         } catch (final Exception e) {
             Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static HttpResponse putJSON(String url, String json) throws IOException {
+        Log.i(CLASS_TAG, "putJSON: url: " + url);
+        try {
+            final HttpPut httpput = new HttpPut(url);
+            StringEntity data = new StringEntity(json,"UTF-8");
+            data.setContentType("application/json; charset=utf-8");
+            httpput.setEntity(data);
+            httpput.addHeader("User-Agent", "SmsSync-Android/1.0)");
+            HttpResponse response = httpclient.execute(httpput);
+            return response;
+        } catch (final Exception e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             e.printStackTrace();
         }
         return null;

@@ -64,6 +64,7 @@ import android.os.Environment;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
@@ -792,10 +793,21 @@ public class Util {
             boolean callback = extractCallbackJSON(resp);
             if (callback) {
                 JSONObject cb = new JSONObject(resp).getJSONObject("callback");
-                // Only supports POST at the moment
+                // Only supports POST/PUT at the moment
                 if (getCallbackMethod(cb).equals("POST")) {
                     try {
                         HttpResponse r = MainHttpClient.postJSON(
+                            getCallbackURL(cb), 
+                            getCallbackData(cb));
+                        String body = MainHttpClient.getText(r);
+                        processResponseCallback(context, body);
+                    } catch (IOException e) {
+                        Log.e(CLASS_TAG, "IOException: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                } else if (getCallbackMethod(cb).equals("PUT")) {
+                    try {
+                        HttpResponse r = MainHttpClient.putJSON(
                             getCallbackURL(cb), 
                             getCallbackData(cb));
                         String body = MainHttpClient.getText(r);
@@ -831,14 +843,21 @@ public class Util {
                 if (payloadObject != null) {
 
                     jsonArray = payloadObject.getJSONArray("messages");
+                    String lineNumber = "+" + getLineNumber(context);
 
                     for (int index = 0; index < jsonArray.length(); ++index) {
                         jsonObject = jsonArray.getJSONObject(index);
-                        Log.i(CLASS_TAG, "Send sms: To: " + jsonObject.getString("to")
-                                + "Message: " + jsonObject.getString("message"));
-
-                        sendSms(context, jsonObject.getString("to"),
-                                jsonObject.getString("message"));
+                        String to = jsonObject.getString("to");
+                        String message = jsonObject.getString("message");
+                        Log.i(CLASS_TAG, "Send sms: To: " + to
+                                + " Message: " + message);
+                        // don't send messages to yourself
+                        if (!lineNumber.equals(to)) {
+                            sendSms(context, to, jsonObject.getString("message"));
+                        } else {
+                            Log.e(CLASS_TAG, "SMS NOT sent, destination is same " +
+                                "as device lineNumber: " + lineNumber);
+                        }
                     }
 
                 }
@@ -987,6 +1006,12 @@ public class Util {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+    }
+
+    /* Should return phone number of the device */
+    public static String getLineNumber(Context context) {
+        TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        return tMgr.getLine1Number();
     }
 
     public static String getPhoneNumber(Context context) {
