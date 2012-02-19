@@ -779,7 +779,7 @@ public class Util {
      * Does a HTTP request based on callback json configuration data
      * 
      * @param context - Context object
-     * @param resp - Response string 
+     * @param resp - String string 
      */
     public static void processResponseCallback(Context context, String resp) {
         Log.i(CLASS_TAG, "processResponseCallback(): response: " + resp);

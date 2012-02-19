@@ -245,49 +245,6 @@ public class MainHttpClient {
         }
     }
 
-
-    /**
-     * Does a HTTP POST request
-     * 
-     * @param String url - The Callback URL to do the HTTP POST
-     * @return String - the HTTP response
-     */
-    public static String postToWebService(String url, List<NameValuePair> params) {
-        HttpResponse response;
-
-        try {
-            // Create a new HttpClient and Post Header
-            final HttpPost httpPost = new HttpPost(url);
-            httpPost.addHeader("User-Agent", "SMSSync-Android/1.0)");
-            httpPost.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
-            response = httpclient.execute(httpPost);  
-
-            // Add your data
-            /*List<NameValuePair> pairs = new ArrayList<NameValuePair>(3);
-            pairs.add(new BasicNameValuePair("secret", params.get("secret")));
-            pairs.add(new BasicNameValuePair("from", params.get("from")));
-            pairs.add(new BasicNameValuePair("message", params.get("message")));
-            pairs.add(new BasicNameValuePair("message_id",params.get("message_id")));
-            pairs.add(new BasicNameValuePair("sent_timestamp", formatDate(params
-                    .get("sent_timestamp"))));
-            pairs.add(new BasicNameValuePair("sent_to", params.get("sent_to")));
-            httppost.setEntity(new UrlEncodedFormEntity(pairs, HTTP.UTF_8));
-            */
-
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode  == 200 || statusCode  == 201) {
-                String resp = getText(response);
-                return resp;
-            } else {
-                return "";
-            }
-        } catch (ClientProtocolException e) {
-            return null;
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
     public static String getText(HttpResponse response) {
         String text = "";
         try {
