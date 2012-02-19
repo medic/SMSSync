@@ -1008,7 +1008,13 @@ public class Util {
         }
     }
 
-    /* Should return phone number of the device */
+    /**
+     * Should return phone number of the device 
+     * 
+     * @param Context context - the activity calling this method.
+     * @return String - phone number of the device, NOT including '+' prefix
+     *
+     */
     public static String getLineNumber(Context context) {
         TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         return tMgr.getLine1Number();
