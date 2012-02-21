@@ -851,7 +851,7 @@ public class Util {
                         String message = jsonObject.getString("message");
                         Log.i(CLASS_TAG, "Send sms: To: " + to
                                 + " Message: " + message);
-                        if (!lineNumber.equals(to)) {
+                        if (!PhoneNumberUtils.compare(lineNumber,to)) {
                             /* Not sending messages back to the device because
                              * Kujua sends error responses when data is
                              * invalid, and this can cause an endless loop of
