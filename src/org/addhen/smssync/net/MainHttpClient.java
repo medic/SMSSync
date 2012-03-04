@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -61,6 +62,7 @@ import org.json.JSONObject;
 
 import android.content.Context;
 import android.util.Log;
+import android.util.Base64;
 
 public class MainHttpClient {
 
@@ -109,11 +111,22 @@ public class MainHttpClient {
         httpclient = new DefaultHttpClient(manager, httpParameters);
     }
 
-    public static HttpResponse GetURL(String URL) throws IOException {
+    public static String base64Encode(String str) {
+        byte[] bytes = str.getBytes();
+        return Base64.encodeToString(bytes, Base64.DEFAULT);
+    };
+    
+    public static HttpResponse GetURL(String url) throws IOException {
 
         try {
-            // wrap try around because this constructor can throw Error
-            final HttpGet httpget = new HttpGet(URL);
+            URI uri = new URI(url);
+            String userInfo = uri.getUserInfo();
+            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
+            Log.i(CLASS_TAG, "base64 encoded: " + base64Encode(userInfo));
+            final HttpGet httpget = new HttpGet(uri);
+            if (userInfo != null) {
+                httpget.addHeader("Authorization", "Basic " + base64Encode(userInfo));
+            }
             httpget.addHeader("User-Agent", "SmsSync-Android/1.0)");
 
             // Post, check and show the result (not really spectacular, but
@@ -132,7 +145,13 @@ public class MainHttpClient {
     public static HttpResponse postJSON(String url, String json) throws IOException {
         Log.i(CLASS_TAG, "postJSON: url: " + url);
         try {
-            final HttpPost httppost = new HttpPost(url);
+            URI uri = new URI(url);
+            String userInfo = uri.getUserInfo();
+            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
+            final HttpPost httppost = new HttpPost(uri);
+            if (userInfo != null) {
+                httppost.addHeader("Authorization", "Basic " + base64Encode(userInfo));
+            }
             StringEntity data = new StringEntity(json,"UTF-8");
             data.setContentType("application/json; charset=utf-8");
             httppost.setEntity(data);
@@ -150,7 +169,13 @@ public class MainHttpClient {
     public static HttpResponse putJSON(String url, String json) throws IOException {
         Log.i(CLASS_TAG, "putJSON: url: " + url);
         try {
-            final HttpPut httpput = new HttpPut(url);
+            URI uri = new URI(url);
+            String userInfo = uri.getUserInfo();
+            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
+            final HttpPut httpput = new HttpPut(uri);
+            if (userInfo != null) {
+                httpput.addHeader("Authorization", "Basic " + base64Encode(userInfo));
+            }
             StringEntity data = new StringEntity(json,"UTF-8");
             data.setContentType("application/json; charset=utf-8");
             httpput.setEntity(data);
@@ -174,10 +199,16 @@ public class MainHttpClient {
      */
     public static boolean postSmsToWebService(String url, HashMap<String, String> params,
             Context context) {
-        // Create a new HttpClient and Post Header
-        HttpPost httppost = new HttpPost(url);
-
         try {
+
+            // Create a new HttpClient and Post Header
+            URI uri = new URI(url);
+            String userInfo = uri.getUserInfo();
+            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
+            HttpPost httppost = new HttpPost(uri);
+            if (userInfo != null) {
+                httppost.setHeader("Authorization", "Basic " + base64Encode(userInfo));
+            }
 
             // Add your data
             List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(3);
@@ -207,6 +238,10 @@ public class MainHttpClient {
             return false;
         } catch (IOException e) {
             return false;
+        } catch (java.net.URISyntaxException e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -219,11 +254,17 @@ public class MainHttpClient {
      */
     public static String getFromWebService(String url) {
 
-        // Create a new HttpClient 
-        final HttpGet httpGet = new HttpGet(url);
-        httpGet.addHeader("User-Agent", "SMSSync-Android/1.0)");
 
         try {
+            // Create a new HttpClient 
+            URI uri = new URI(url);
+            String userInfo = uri.getUserInfo();
+            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
+            final HttpGet httpGet = new HttpGet(uri);
+            if (userInfo != null) {
+                httpGet.addHeader("Authorization", "Basic " + base64Encode(userInfo));
+            }
+            httpGet.addHeader("User-Agent", "SMSSync-Android/1.0)");
             // Execute HTTP Get Request
             HttpResponse response = httpclient.execute(httpGet);
             int statusCode = response.getStatusLine().getStatusCode();
@@ -241,6 +282,10 @@ public class MainHttpClient {
             return null;
         } catch (IOException e) {
             Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+            return null;
+        } catch (java.net.URISyntaxException e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
