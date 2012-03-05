@@ -31,18 +31,21 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Iterator;
 
 import org.addhen.smssync.Prefs;
 import org.addhen.smssync.util.Util;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
+import org.apache.http.protocol.HTTP;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.conn.params.ConnManagerPNames;
 import org.apache.http.conn.params.ConnPerRouteBean;
 import org.apache.http.conn.scheme.PlainSocketFactory;
@@ -55,7 +58,6 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
-import org.apache.http.protocol.HTTP;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -113,20 +115,13 @@ public class MainHttpClient {
 
     public static String base64Encode(String str) {
         byte[] bytes = str.getBytes();
-        return Base64.encodeToString(bytes, Base64.DEFAULT);
+        return Base64.encodeToString(bytes, Base64.NO_WRAP);
     };
     
     public static HttpResponse GetURL(String url) throws IOException {
 
         try {
-            URI uri = new URI(url);
-            String userInfo = uri.getUserInfo();
-            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
-            Log.i(CLASS_TAG, "base64 encoded: " + base64Encode(userInfo));
-            final HttpGet httpget = new HttpGet(uri);
-            if (userInfo != null) {
-                httpget.addHeader("Authorization", "Basic " + base64Encode(userInfo));
-            }
+            final HttpGet httpget = new HttpGet(url);
             httpget.addHeader("User-Agent", "SmsSync-Android/1.0)");
 
             // Post, check and show the result (not really spectacular, but
@@ -142,15 +137,14 @@ public class MainHttpClient {
         return null;
     }
 
-    public static HttpResponse postJSON(String url, String json) throws IOException {
+    public static HttpResponse postJSON(String url, String json, JSONObject headers) throws IOException {
         Log.i(CLASS_TAG, "postJSON: url: " + url);
         try {
-            URI uri = new URI(url);
-            String userInfo = uri.getUserInfo();
-            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
-            final HttpPost httppost = new HttpPost(uri);
-            if (userInfo != null) {
-                httppost.addHeader("Authorization", "Basic " + base64Encode(userInfo));
+            final HttpPost httppost = new HttpPost(url);
+            Iterator<String> iter = headers.keys();
+            while (iter.hasNext()) {
+                String k = iter.next();
+                httppost.addHeader(k, headers.getString(k));
             }
             StringEntity data = new StringEntity(json,"UTF-8");
             data.setContentType("application/json; charset=utf-8");
@@ -166,15 +160,14 @@ public class MainHttpClient {
         return null;
     }
 
-    public static HttpResponse putJSON(String url, String json) throws IOException {
+    public static HttpResponse putJSON(String url, String json, JSONObject headers) throws IOException {
         Log.i(CLASS_TAG, "putJSON: url: " + url);
         try {
-            URI uri = new URI(url);
-            String userInfo = uri.getUserInfo();
-            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
-            final HttpPut httpput = new HttpPut(uri);
-            if (userInfo != null) {
-                httpput.addHeader("Authorization", "Basic " + base64Encode(userInfo));
+            final HttpPut httpput = new HttpPut(url);
+            Iterator<String> iter = headers.keys();
+            while (iter.hasNext()) {
+                String k = iter.next();
+                httpput.addHeader(k, headers.getString(k));
             }
             StringEntity data = new StringEntity(json,"UTF-8");
             data.setContentType("application/json; charset=utf-8");
@@ -201,13 +194,15 @@ public class MainHttpClient {
             Context context) {
         try {
 
-            // Create a new HttpClient and Post Header
+            // support username:pass@ in URL String
             URI uri = new URI(url);
             String userInfo = uri.getUserInfo();
             Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
+
             HttpPost httppost = new HttpPost(uri);
+
             if (userInfo != null) {
-                httppost.setHeader("Authorization", "Basic " + base64Encode(userInfo));
+                httppost.addHeader("Authorization", "Basic " + base64Encode(userInfo));
             }
 
             // Add your data
@@ -220,6 +215,7 @@ public class MainHttpClient {
                     .get("sent_timestamp"))));
             nameValuePairs.add(new BasicNameValuePair("sent_to", params.get("sent_to")));
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, HTTP.UTF_8));
+
 
             // Execute HTTP Post Request
             HttpResponse response = httpclient.execute(httppost);
@@ -235,8 +231,12 @@ public class MainHttpClient {
             }
             return false;
         } catch (ClientProtocolException e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+            e.printStackTrace();
             return false;
         } catch (IOException e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+            e.printStackTrace();
             return false;
         } catch (java.net.URISyntaxException e) {
             Log.e(CLASS_TAG, "Exception: " + e.getMessage());

@@ -8,9 +8,11 @@ import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.StringBuilder;
+import java.net.URI;
 import java.net.URLEncoder;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.lang.StringBuilder;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.HttpResponse;
@@ -26,6 +28,8 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
+import android.util.Base64;
+import android.util.Log;
 
 public class RestClient {
 
@@ -36,6 +40,10 @@ public class RestClient {
 
     private int responseCode;
     private String message;
+
+    private static final String CLASS_TAG = RestClient.class.getSimpleName();
+
+    private static final String USER_AGENT = "SMSSync-Android/1.0";
 
     public enum RequestMethod {
             GET, POST, PUT
@@ -55,25 +63,40 @@ public class RestClient {
         return responseCode;
     }
 
-    public RestClient(String url)
-    {
+    public String base64Encode(String str) {
+        byte[] bytes = str.getBytes();
+        return Base64.encodeToString(bytes, Base64.NO_WRAP);
+    }
+
+    public RestClient(String url) throws Exception {
         this.url = url;
         params = new ArrayList<NameValuePair>();
         headers = new ArrayList<NameValuePair>();
+        headers.add(new BasicNameValuePair("User-Agent", USER_AGENT));
+
+        try {
+            URI uri = new URI(url);
+            String userInfo = uri.getUserInfo();
+            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
+            if (userInfo != null) {
+                headers.add(
+                    new BasicNameValuePair(
+                        "Authorization", "Basic " + base64Encode(userInfo)));
+            }
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void addParam(String name, String value)
-    {
+    public void addParam(String name, String value) {
         params.add(new BasicNameValuePair(name, value));
     }
 
-    public void addHeader(String name, String value)
-    {
+    public void addHeader(String name, String value) {
         headers.add(new BasicNameValuePair(name, value));
     }
 
-    public void execute(RequestMethod method) throws Exception
-    {
+    public void execute(RequestMethod method) throws Exception {
         switch(method) {
             case GET:
             {
@@ -143,8 +166,7 @@ public class RestClient {
         }
     }
 
-    private void executeRequest(HttpUriRequest request, String url)
-    {
+    private void executeRequest(HttpUriRequest request, String url) {
         HttpClient client = new DefaultHttpClient();
 
         HttpResponse httpResponse;

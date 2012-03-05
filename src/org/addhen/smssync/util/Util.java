@@ -776,6 +776,22 @@ public class Util {
     };
 
     /**
+     * @param JSONObject callback - JSONObject representing the callback 
+     * @return JSONObject headers - The headers object of the callback json
+     */
+    public static JSONObject getCallbackHeaders(JSONObject callback) {
+        Log.i(CLASS_TAG, "getCallbackOptions()");
+        try {
+            JSONObject options = callback.getJSONObject("options");
+            JSONObject headers = options.getJSONObject("headers");
+            return headers;
+        } catch (JSONException e) {
+            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+        }
+        return null;
+    };
+
+    /**
      * Does a HTTP request based on callback json configuration data
      * 
      * @param context - Context object
@@ -798,7 +814,8 @@ public class Util {
                     try {
                         HttpResponse r = MainHttpClient.postJSON(
                             getCallbackURL(cb), 
-                            getCallbackData(cb));
+                            getCallbackData(cb),
+                            getCallbackHeaders(cb));
                         String body = MainHttpClient.getText(r);
                         processResponseCallback(context, body);
                     } catch (IOException e) {
@@ -809,7 +826,8 @@ public class Util {
                     try {
                         HttpResponse r = MainHttpClient.putJSON(
                             getCallbackURL(cb), 
-                            getCallbackData(cb));
+                            getCallbackData(cb),
+                            getCallbackHeaders(cb));
                         String body = MainHttpClient.getText(r);
                         processResponseCallback(context, body);
                     } catch (IOException e) {
