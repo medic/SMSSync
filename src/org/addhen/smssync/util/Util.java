@@ -780,7 +780,7 @@ public class Util {
      * @return JSONObject headers - The headers object of the callback json
      */
     public static JSONObject getCallbackHeaders(JSONObject callback) {
-        Log.i(CLASS_TAG, "getCallbackOptions()");
+        Log.i(CLASS_TAG, "getCallbackHeaders()");
         try {
             JSONObject options = callback.getJSONObject("options");
             JSONObject headers = options.getJSONObject("headers");
