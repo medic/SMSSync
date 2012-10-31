@@ -450,6 +450,17 @@ public class SmsReceiverService extends Service {
         return msgs;
     }
 
+	synchronized protected static WifiManager.WifiLock getWifiLock(Context context) {
+        // keep wifi alive
+        if (wifilock == null) {
+            WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            wifilock = manager.createWifiLock(CLASS_TAG);
+            wifilock.setReferenceCounted(true);
+        }
+
+        return wifilock;
+    }
+
     /**
      * Start the service to process the current event notifications, acquiring
      * the wake lock before returning to ensure that the service will run.
@@ -467,14 +478,9 @@ public class SmsReceiverService extends Service {
                 mStartingService.setReferenceCounted(false);
             }
 
-            // keep wifi alive
-            if (wifilock == null) {
-                WifiManager manager = (WifiManager)context.getSystemService(Context.WIFI_SERVICE);
-                wifilock = manager.createWifiLock(CLASS_TAG);
-            }
-
             mStartingService.acquire();
-            wifilock.acquire();
+            if (!getWifiLock(context).isHeld()) 
+                getWifiLock(context).acquire();
             context.startService(intent);
         }
     }
