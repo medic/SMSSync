@@ -1,4 +1,4 @@
-Update your project files to use the Android SDK target build of your choosing:
+Update your project build files to use your Android SDK target:
 
 e.g. `android update project --target 3 -p .`
 
