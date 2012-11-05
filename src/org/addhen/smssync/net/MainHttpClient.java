@@ -230,15 +230,8 @@ public class MainHttpClient {
                 }
             }
             return false;
-        } catch (ClientProtocolException e) {
-            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        } catch (IOException e) {
-            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        } catch (java.net.URISyntaxException e) {
+        } catch (Exception e) {
+            // fail gracefully
             Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             e.printStackTrace();
             return false;
