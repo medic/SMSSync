@@ -520,7 +520,14 @@ public class Util {
             params.put("sent_timestamp", messagesTimestamp);
             params.put("sent_to", getPhoneNumber(context));
             params.put("message_id", messagesId);
-            return MainHttpClient.postSmsToWebService(urlBuilder.toString(), params, context);
+            try {
+                return MainHttpClient.postSmsToWebService(urlBuilder.toString(), params, context);
+            } catch (final Exception e) {
+                // fail gracefully
+                Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+                e.printStackTrace();
+                return false;
+            }
         }
 
         return false;

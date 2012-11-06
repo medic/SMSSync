@@ -35,9 +35,15 @@ public class SyncPendingMessagesService extends SmsSyncServices {
             // get Id
             messageId = intent.getIntExtra(ServicesConstants.MESSEAGE_ID, messageId);
             if (MainApplication.mDb.fetchMessagesCount() > 0) {
-                int status = Util.snycToWeb(SyncPendingMessagesService.this, messageId);
-                statusIntent.putExtra("status", status);
-                sendBroadcast(statusIntent);
+                try {
+                    int status = Util.snycToWeb(SyncPendingMessagesService.this, messageId);
+                    statusIntent.putExtra("status", status);
+                    sendBroadcast(statusIntent);
+                } catch (final Exception e) {
+                    // fail gracefully
+                    Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         }
 

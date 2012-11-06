@@ -230,7 +230,7 @@ public class MainHttpClient {
                 }
             }
             return false;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             // fail gracefully
             Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             e.printStackTrace();
