@@ -135,7 +135,12 @@ public class SmsReceiverService extends Service {
                 String action = intent.getAction();
 
                 if (ACTION_SMS_RECEIVED.equals(action)) {
-                    handleSmsReceived(intent);
+                    try {
+                        handleSmsReceived(intent);
+                    } catch (final Exception e) {
+                        Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
             finishStartingService(SmsReceiverService.this, serviceId);
