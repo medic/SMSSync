@@ -27,11 +27,8 @@ import java.io.InputStreamReader;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 
-import org.addhen.smssync.util.Logger;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.params.ConnManagerPNames;
 import org.apache.http.conn.params.ConnPerRouteBean;
 import org.apache.http.conn.scheme.PlainSocketFactory;
@@ -45,6 +42,8 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 
 import android.util.Log;
+
+import org.addhen.smssync.util.Logger;
 
 public class MainHttpClient {
 
@@ -101,27 +100,6 @@ public class MainHttpClient {
 				httpParameters, schemeRegistry);
 
 		httpclient = new DefaultHttpClient(manager, httpParameters);
-	}
-
-	public static HttpResponse GetURL(String URL) throws IOException {
-
-		try {
-			// wrap try around because this constructor can throw Error
-			final HttpGet httpget = new HttpGet(URL);
-			httpget.addHeader("User-Agent", "SmsSync-Android/1.0)");
-
-			// Post, check and show the result (not really spectacular, but
-			// works):
-			HttpResponse response = httpclient.execute(httpget);
-
-			return response;
-
-		} catch (final Exception e) {
-			// TODO Auto-generated catch block
-			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 	protected void log(String message) {
