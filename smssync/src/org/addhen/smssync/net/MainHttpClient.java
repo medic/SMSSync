@@ -44,6 +44,8 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 
+import android.util.Log;
+
 public class MainHttpClient {
 
 	protected static DefaultHttpClient httpclient;
@@ -53,8 +55,10 @@ public class MainHttpClient {
 	private int timeoutConnection = 60000;
 
 	private int timeoutSocket = 60000;
-	
+
 	protected String url;
+
+	private static final String CLASS_TAG = MainHttpClient.class.getSimpleName();
 
 	public MainHttpClient(String url) {
 		this.url = url;
@@ -86,9 +90,11 @@ public class MainHttpClient {
 					new TrustedSocketFactory(url, false), 443));
 		} catch (KeyManagementException e) {
 			// TODO Auto-generated catch block
+			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
 			e.printStackTrace();
 		} catch (NoSuchAlgorithmException e) {
 			// TODO Auto-generated catch block
+			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
 			e.printStackTrace();
 		}
 		ThreadSafeClientConnManager manager = new ThreadSafeClientConnManager(
@@ -112,6 +118,7 @@ public class MainHttpClient {
 
 		} catch (final Exception e) {
 			// TODO Auto-generated catch block
+			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
 			e.printStackTrace();
 		}
 		return null;

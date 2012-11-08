@@ -81,13 +81,14 @@ public class RestHttpClient extends MainHttpClient {
         try {
             URI uri = new URI(url);
             String userInfo = uri.getUserInfo();
-            Log.i(CLASS_TAG, "getUserInfo: " + userInfo);
+            Log.d(CLASS_TAG, "getUserInfo: " + userInfo);
             if (userInfo != null) {
                 headers.add(
                     new BasicNameValuePair(
                         "Authorization", "Basic " + base64Encode(userInfo)));
             }
         } catch (URISyntaxException e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -195,9 +196,11 @@ public class RestHttpClient extends MainHttpClient {
             }
 
         } catch (ClientProtocolException e)  {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             httpclient.getConnectionManager().shutdown();
             e.printStackTrace();
         } catch (IOException e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             httpclient.getConnectionManager().shutdown();
             e.printStackTrace();
         }
@@ -214,11 +217,13 @@ public class RestHttpClient extends MainHttpClient {
                 sb.append(line + "\n");
             }
         } catch (IOException e) {
+            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             e.printStackTrace();
         } finally {
             try {
                 is.close();
             } catch (IOException e) {
+                Log.e(CLASS_TAG, "Exception: " + e.getMessage());
                 e.printStackTrace();
             }
         }
