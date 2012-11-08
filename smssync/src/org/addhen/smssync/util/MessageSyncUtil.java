@@ -138,7 +138,7 @@ public class MessageSyncUtil extends Util {
 	 * @return int
 	 */
 	public int snycToWeb(int messageId, String secret) {
-		Log.b(CLASS_TAG, "syncToWeb(): push pending messages to the Sync URL");
+		Log.d(CLASS_TAG, "syncToWeb(): push pending messages to the Sync URL");
 		MessagesModel model = new MessagesModel();
 		List<MessagesModel> listMessages = new ArrayList<MessagesModel>();
 		// check if it should sync by id
