@@ -51,8 +51,7 @@ public class MessageSyncUtil extends Util {
 
 	private static JSONArray jsonArray;
 
-	private static final String CLASS_TAG = MessageSyncUtil.class
-			.getSimpleName();
+	private static final String CLASS_TAG = MessageSyncUtil.class.getSimpleName();
 
 	private ProcessSms processSms;
 
@@ -78,50 +77,50 @@ public class MessageSyncUtil extends Util {
 	 */
 	public boolean postToAWebService(String from, String message,
 			String sentTimestamp, String messageID, String secret) {
-        
-        Prefs.loadPreferences(context);
+
+		Prefs.loadPreferences(context);
 
 		if (TextUtils.isEmpty(url)) { return false; }
 
 		try {
 
-            RestHttpClient client = new RestHttpClient(url);
+			RestHttpClient client = new RestHttpClient(url);
 
-            client.addParam("secret", secret);
-            client.addParam("from", from);
-            client.addParam("message", message);
-            client.addParam("message_id", messageID);
+			client.addParam("secret", secret);
+			client.addParam("from", from);
+			client.addParam("message", message);
+			client.addParam("message_id", messageID);
 			if (formatDate(sentTimestamp) != null) {
-                client.addParam("sent_timestamp", sentTimestamp);
-            }
-            client.addParam("sent_to", getPhoneNumber(context));
-            client.execute(RestHttpClient.RequestMethod.POST);
-            int statusCode = client.getResponseCode();
-            String resp = client.getResponse();
+				client.addParam("sent_timestamp", sentTimestamp);
+			}
+			client.addParam("sent_to", getPhoneNumber(context));
+			client.execute(RestHttpClient.RequestMethod.POST);
+			int statusCode = client.getResponseCode();
+			String resp = client.getResponse();
 
 			if (statusCode == 200 || statusCode == 201) {
-                boolean success = Util.extractPayloadJSON(resp);
+				boolean success = Util.extractPayloadJSON(resp);
 
 				if (success) {
 					// auto response message is enabled to be received from the
 					// server.
 					if (Prefs.enableReplyFrmServer) {
-                        if (Prefs.enableHttpCallbacks) {
-                            processResponseCallback(resp);
-                        } else {
-                            sendResponseFromServer(resp);
-                        }
+						if (Prefs.enableHttpCallbacks) {
+							processResponseCallback(resp);
+						} else {
+							sendResponseFromServer(resp);
+						}
 					}
-                }
+				}
 
-                return success;
-            }
+				return success;
+			}
 
 			return false;
 
 		} catch (Exception e) {
-            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-            e.printStackTrace();
+			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+			e.printStackTrace();
 			return false;
 		}
 
@@ -162,8 +161,8 @@ public class MessageSyncUtil extends Util {
 			for (MessagesModel messages : listMessages) {
 				log("processing");
 				if (processSms.routePendingMessages(messages.getMessageFrom(),
-						messages.getMessage(), messages.getMessageDate(),
-						String.valueOf(messages.getMessageId()))) {
+							messages.getMessage(), messages.getMessageDate(),
+							String.valueOf(messages.getMessageId()))) {
 
 					// / if it successfully pushes message, delete message
 					// from db
@@ -293,7 +292,7 @@ public class MessageSyncUtil extends Util {
 
 					jsonObject = new JSONObject(response);
 					JSONObject payloadObject = jsonObject
-							.getJSONObject("payload");
+						.getJSONObject("payload");
 
 					if (payloadObject != null) {
 						task = payloadObject.getString("task");
@@ -327,138 +326,138 @@ public class MessageSyncUtil extends Util {
 	}
 
 
-    /**
-     * Does a HTTP request based on callback json configuration data
-     * 
-     * @param resp - String string 
-     */
-    public void processResponseCallback(String resp) {
-        Log.i(CLASS_TAG, "processResponseCallback(): response: " + resp);
-        try {
-            boolean success = extractPayloadJSON(resp);
-            if (success) {
-                sendResponseFromServer(resp);
-            }
-            boolean callback = extractCallbackJSON(resp);
-            if (callback) {
-                JSONObject cb = new JSONObject(resp).getJSONObject("callback");
-                String url = getCallbackURL(cb);
-                String method = getCallbackMethod(cb);
-                RestHttpClient client = new RestHttpClient(url);
-                client.setEntity(getCallbackData(cb));
+	/**
+	 * Does a HTTP request based on callback json configuration data
+	 * 
+	 * @param resp - String string 
+	 */
+	public void processResponseCallback(String resp) {
+		Log.i(CLASS_TAG, "processResponseCallback(): response: " + resp);
+		try {
+			boolean success = extractPayloadJSON(resp);
+			if (success) {
+				sendResponseFromServer(resp);
+			}
+			boolean callback = extractCallbackJSON(resp);
+			if (callback) {
+				JSONObject cb = new JSONObject(resp).getJSONObject("callback");
+				String url = getCallbackURL(cb);
+				String method = getCallbackMethod(cb);
+				RestHttpClient client = new RestHttpClient(url);
+				client.setEntity(getCallbackData(cb));
 
-                JSONObject headers = getCallbackHeaders(cb);
-                Iterator<String> iter = headers.keys();
-                while (iter.hasNext()) {
-                    String k = iter.next();
-                    client.addHeader(k, headers.getString(k));
-                }
+				JSONObject headers = getCallbackHeaders(cb);
+				Iterator<String> iter = headers.keys();
+				while (iter.hasNext()) {
+					String k = iter.next();
+					client.addHeader(k, headers.getString(k));
+				}
 
-                if (method.equals("POST")) {
-                    client.execute(RestHttpClient.RequestMethod.POST);
-                } else if (method.equals("PUT")) {
-                    client.execute(RestHttpClient.RequestMethod.PUT);
-                } else {
-                    client.execute(RestHttpClient.RequestMethod.GET);
-                }
+				if (method.equals("POST")) {
+					client.execute(RestHttpClient.RequestMethod.POST);
+				} else if (method.equals("PUT")) {
+					client.execute(RestHttpClient.RequestMethod.PUT);
+				} else {
+					client.execute(RestHttpClient.RequestMethod.GET);
+				}
 
-                processResponseCallback(client.getResponse());
-            }
-        } catch (Exception e) {
-            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+				processResponseCallback(client.getResponse());
+			}
+		} catch (Exception e) {
+			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 
-    /**
-     * Extract callback JSON data
-     * 
-     * @apram json_data - The json data to be formatted.
-     * @return boolean
-     */
-    public static boolean extractCallbackJSON(String json_data) {
-        Log.i(CLASS_TAG, "extractCallbackJSON(): Extracting callback JSON data" + json_data);
-        try {
-            JSONObject test = new JSONObject(json_data).getJSONObject("callback");
-            return true;
-        } catch (JSONException e) {
-            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
-            return false;
-        }
-    }
+	/**
+	 * Extract callback JSON data
+	 * 
+	 * @apram json_data - The json data to be formatted.
+	 * @return boolean
+	 */
+	public static boolean extractCallbackJSON(String json_data) {
+		Log.i(CLASS_TAG, "extractCallbackJSON(): Extracting callback JSON data" + json_data);
+		try {
+			JSONObject test = new JSONObject(json_data).getJSONObject("callback");
+			return true;
+		} catch (JSONException e) {
+			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+			return false;
+		}
+	}
 
 
-    /**
-     * @param JSONObject callback - JSONObject representing the callback 
-     * @return String url - The URL from the callback response
-     */
-    public static String getCallbackURL(JSONObject callback) {
-        Log.i(CLASS_TAG, "getCallbackURL:");
-        try {
-            JSONObject options = callback.getJSONObject("options");
-            String host = options.getString("host");
-            String port = options.getString("port");
-            String path = options.getString("path");
-            String url = "";
-            if (port == "null" || TextUtils.isEmpty(port)) {
-                url = "http://" + host + path;
-            } else if (port == "443") {
-                url = "https://" + host + path;
-            } else {
-                url = "http://" + host + ":" + port + path;
-            }
-            Log.i(CLASS_TAG, "callback URL is: " + url);
-            return url;
-        } catch (JSONException e) {
-            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
-        }
-        return null;
-    };
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return String url - The URL from the callback response
+	 */
+	public static String getCallbackURL(JSONObject callback) {
+		Log.i(CLASS_TAG, "getCallbackURL:");
+		try {
+			JSONObject options = callback.getJSONObject("options");
+			String host = options.getString("host");
+			String port = options.getString("port");
+			String path = options.getString("path");
+			String url = "";
+			if (port == "null" || TextUtils.isEmpty(port)) {
+				url = "http://" + host + path;
+			} else if (port == "443") {
+				url = "https://" + host + path;
+			} else {
+				url = "http://" + host + ":" + port + path;
+			}
+			Log.i(CLASS_TAG, "callback URL is: " + url);
+			return url;
+		} catch (JSONException e) {
+			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+		}
+		return null;
+	};
 
-    /**
-     * @param JSONObject callback - JSONObject representing the callback 
-     * @return String method - The method string from the callback options
-     */
-    public static String getCallbackMethod(JSONObject callback) {
-        Log.i(CLASS_TAG, "getCallbackMethod()");
-        try {
-            JSONObject options = callback.getJSONObject("options");
-            Log.i(CLASS_TAG, "getCallbackMethod: options" + options);
-            return options.getString("method");
-        } catch (JSONException e) {
-            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
-        }
-        return null;
-    };
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return String method - The method string from the callback options
+	 */
+	public static String getCallbackMethod(JSONObject callback) {
+		Log.i(CLASS_TAG, "getCallbackMethod()");
+		try {
+			JSONObject options = callback.getJSONObject("options");
+			Log.i(CLASS_TAG, "getCallbackMethod: options" + options);
+			return options.getString("method");
+		} catch (JSONException e) {
+			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+		}
+		return null;
+	};
 
-    /**
-     * @param JSONObject callback - JSONObject representing the callback 
-     * @return String data - The data/entity of the callback json
-     */
-    public static String getCallbackData(JSONObject callback) {
-        Log.i(CLASS_TAG, "getCallbackData()");
-        try {
-            String data = callback.getJSONObject("data").toString();
-            return data;
-        } catch (JSONException e) {
-            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
-        }
-        return null;
-    };
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return String data - The data/entity of the callback json
+	 */
+	public static String getCallbackData(JSONObject callback) {
+		Log.i(CLASS_TAG, "getCallbackData()");
+		try {
+			String data = callback.getJSONObject("data").toString();
+			return data;
+		} catch (JSONException e) {
+			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+		}
+		return null;
+	};
 
-    /**
-     * @param JSONObject callback - JSONObject representing the callback 
-     * @return JSONObject headers - The headers object of the callback json
-     */
-    public static JSONObject getCallbackHeaders(JSONObject callback) {
-        Log.i(CLASS_TAG, "getCallbackHeaders()");
-        try {
-            JSONObject options = callback.getJSONObject("options");
-            JSONObject headers = options.getJSONObject("headers");
-            return headers;
-        } catch (JSONException e) {
-            Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
-        }
-        return null;
-    };
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return JSONObject headers - The headers object of the callback json
+	 */
+	public static JSONObject getCallbackHeaders(JSONObject callback) {
+		Log.i(CLASS_TAG, "getCallbackHeaders()");
+		try {
+			JSONObject options = callback.getJSONObject("options");
+			JSONObject headers = options.getJSONObject("headers");
+			return headers;
+		} catch (JSONException e) {
+			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+		}
+		return null;
+	};
 }
