@@ -78,8 +78,6 @@ public class MessageSyncUtil extends Util {
 	public boolean postToAWebService(String from, String message,
 			String sentTimestamp, String messageID, String secret) {
 
-		Prefs.loadPreferences(context);
-
 		if (TextUtils.isEmpty(url)) { return false; }
 
 		try {
@@ -90,33 +88,17 @@ public class MessageSyncUtil extends Util {
 			client.addParam("from", from);
 			client.addParam("message", message);
 			client.addParam("message_id", messageID);
+			
 			if (formatDate(sentTimestamp) != null) {
 				client.addParam("sent_timestamp", sentTimestamp);
 			}
+
 			client.addParam("sent_to", getPhoneNumber(context));
 			client.execute(RestHttpClient.RequestMethod.POST);
+
 			int statusCode = client.getResponseCode();
 			String resp = client.getResponse();
-
-			if (statusCode == 200 || statusCode == 201) {
-				boolean success = Util.extractPayloadJSON(resp);
-
-				if (success) {
-					// auto response message is enabled to be received from the
-					// server.
-					if (Prefs.enableReplyFrmServer) {
-						if (Prefs.enableHttpCallbacks) {
-							processResponseCallback(resp);
-						} else {
-							sendResponseFromServer(resp);
-						}
-					}
-				}
-
-				return success;
-			}
-
-			return false;
+			return processResponse(resp, statusCode);
 
 		} catch (Exception e) {
 			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
@@ -181,12 +163,13 @@ public class MessageSyncUtil extends Util {
 	}
 
 	/**
-	 * Sends messages received from the server as SMS.
+	 * Sends messages received from the server as SMS. Only send outgoing
+	 * messages when success is true.
 	 * 
 	 * @param String
 	 *            response - the response from the server.
 	 */
-	public void sendResponseFromServer(String response) {
+	private void sendResponseFromServer(String response) {
 		Log.d(CLASS_TAG, "performResponseFromServer(): " + " response:"
 				+ response);
 
@@ -265,8 +248,6 @@ public class MessageSyncUtil extends Util {
 	 */
 	public void performTask(String urlSecret) {
 		Log.d(CLASS_TAG, "performTask(): perform a task");
-		// load Prefs
-		Prefs.loadPreferences(context);
 
 		// validate configured url
 		int status = validateCallbackUrl(url);
@@ -338,44 +319,62 @@ public class MessageSyncUtil extends Util {
 
 	/**
 	 * Does a HTTP request based on callback json configuration data
-	 * 
-	 * @param resp - String string 
 	 */
-	public void processResponseCallback(String resp) {
-		Log.d(CLASS_TAG, "processResponseCallback(): response: " + resp);
-		try {
-			boolean success = extractPayloadJSON(resp);
+	private boolean processResponse(String resp, int statusCode) {
+		Log.d(CLASS_TAG, "processResponse(): response: " + resp);
+
+		// load Prefs
+		Prefs.loadPreferences(context);
+
+		// any req in the chain fails, return false
+		if (statusCode != 200 && statusCode != 201) {
+			return false;
+		}
+
+		// continue until we get a success true value in payload with no
+		// callback. enforces success/message payload at end of callback chain.
+		boolean success = Util.extractPayloadJSON(resp);
+		boolean callback = extractCallbackJSON(resp);
+
+		if (!callback || !Prefs.enableHttpCallbacks) {
 			if (success) {
-				sendResponseFromServer(resp);
-			}
-			boolean callback = extractCallbackJSON(resp);
-			if (callback) {
-				JSONObject cb = new JSONObject(resp).getJSONObject("callback");
-				String url = getCallbackURL(cb);
-				String method = getCallbackMethod(cb);
-				RestHttpClient client = new RestHttpClient(url);
-				client.setEntity(getCallbackData(cb));
-
-				JSONObject headers = getCallbackHeaders(cb);
-				Iterator<String> iter = headers.keys();
-				while (iter.hasNext()) {
-					String k = iter.next();
-					client.addHeader(k, headers.getString(k));
+				if (Prefs.enableReplyFrmServer) {
+					sendResponseFromServer(resp);
 				}
-
-				if (method.equals("POST")) {
-					client.execute(RestHttpClient.RequestMethod.POST);
-				} else if (method.equals("PUT")) {
-					client.execute(RestHttpClient.RequestMethod.PUT);
-				} else {
-					client.execute(RestHttpClient.RequestMethod.GET);
-				}
-
-				processResponseCallback(client.getResponse());
 			}
+			return success;
+		}
+
+		try {
+			JSONObject cb = new JSONObject(resp).getJSONObject("callback");
+			String url = getCallbackURL(cb);
+			String method = getCallbackMethod(cb);
+			RestHttpClient client = new RestHttpClient(url);
+			client.setEntity(getCallbackData(cb));
+
+			JSONObject headers = getCallbackHeaders(cb);
+			Iterator<String> iter = headers.keys();
+			while (iter.hasNext()) {
+				String k = iter.next();
+				client.addHeader(k, headers.getString(k));
+			}
+
+			if (method.equals("POST")) {
+				client.execute(RestHttpClient.RequestMethod.POST);
+			} else if (method.equals("PUT")) {
+				client.execute(RestHttpClient.RequestMethod.PUT);
+			} else {
+				client.execute(RestHttpClient.RequestMethod.GET);
+			}
+
+			return processResponse(
+				client.getResponse(),
+				client.getResponseCode()
+			);
 		} catch (Exception e) {
 			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
 			e.printStackTrace();
+			return false;
 		}
 	}
 
@@ -385,8 +384,8 @@ public class MessageSyncUtil extends Util {
 	 * @apram json_data - The json data to be formatted.
 	 * @return boolean
 	 */
-	public static boolean extractCallbackJSON(String json_data) {
-		Log.i(CLASS_TAG, "extractCallbackJSON(): Extracting callback JSON data" + json_data);
+	private static boolean extractCallbackJSON(String json_data) {
+		Log.d(CLASS_TAG, "extractCallbackJSON(): Extracting callback JSON data" + json_data);
 		try {
 			JSONObject test = new JSONObject(json_data).getJSONObject("callback");
 			return true;
@@ -402,7 +401,7 @@ public class MessageSyncUtil extends Util {
 	 * @param JSONObject callback - JSONObject representing the callback 
 	 * @return String url - The URL from the callback response
 	 */
-	public static String getCallbackURL(JSONObject callback) {
+	private static String getCallbackURL(JSONObject callback) {
 		Log.d(CLASS_TAG, "getCallbackURL:");
 		try {
 			JSONObject options = callback.getJSONObject("options");
@@ -429,7 +428,7 @@ public class MessageSyncUtil extends Util {
 	 * @param JSONObject callback - JSONObject representing the callback 
 	 * @return String method - The method string from the callback options
 	 */
-	public static String getCallbackMethod(JSONObject callback) {
+	private static String getCallbackMethod(JSONObject callback) {
 		Log.d(CLASS_TAG, "getCallbackMethod()");
 		try {
 			JSONObject options = callback.getJSONObject("options");
@@ -445,7 +444,7 @@ public class MessageSyncUtil extends Util {
 	 * @param JSONObject callback - JSONObject representing the callback 
 	 * @return String data - The data/entity of the callback json
 	 */
-	public static String getCallbackData(JSONObject callback) {
+	private static String getCallbackData(JSONObject callback) {
 		Log.d(CLASS_TAG, "getCallbackData()");
 		try {
 			String data = callback.getJSONObject("data").toString();
@@ -460,7 +459,7 @@ public class MessageSyncUtil extends Util {
 	 * @param JSONObject callback - JSONObject representing the callback 
 	 * @return JSONObject headers - The headers object of the callback json
 	 */
-	public static JSONObject getCallbackHeaders(JSONObject callback) {
+	private static JSONObject getCallbackHeaders(JSONObject callback) {
 		Log.d(CLASS_TAG, "getCallbackHeaders()");
 		try {
 			JSONObject options = callback.getJSONObject("options");
