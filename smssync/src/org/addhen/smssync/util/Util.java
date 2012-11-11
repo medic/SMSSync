@@ -217,21 +217,16 @@ public class Util {
 	 * @return String
 	 */
 	public static boolean extractPayloadJSON(String json_data) {
-		Log.i(CLASS_TAG, "extracPayloadJSON(): Extracting payload JSON data"
+		Log.d(CLASS_TAG, "extracPayloadJSON(): Extracting payload JSON data"
 				+ json_data);
 		try {
-
 			jsonObject = new JSONObject(json_data);
 			return jsonObject.getJSONObject("payload").getBoolean("success");
-
 		} catch (JSONException e) {
 			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
 			return false;
 		}
-
 	}
-
-	
 
 	/**
 	 * Show toast
