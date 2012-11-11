@@ -47,6 +47,8 @@ public class MessageSyncUtil extends Util {
 
 	private String url;
 
+	private String urlSecret;
+
 	private static JSONObject jsonObject;
 
 	private static JSONArray jsonArray;
@@ -58,6 +60,7 @@ public class MessageSyncUtil extends Util {
 	public MessageSyncUtil(Context context, String url) {
 		this.context = context;
 		this.url = url;
+		this.urlSecret = "";
 		processSms = new ProcessSms(context);
 	}
 
@@ -88,7 +91,7 @@ public class MessageSyncUtil extends Util {
 			client.addParam("from", from);
 			client.addParam("message", message);
 			client.addParam("message_id", messageID);
-			
+
 			if (formatDate(sentTimestamp) != null) {
 				client.addParam("sent_timestamp", sentTimestamp);
 			}
@@ -170,33 +173,47 @@ public class MessageSyncUtil extends Util {
 	 *            response - the response from the server.
 	 */
 	private void sendResponseFromServer(String response) {
-		Log.d(CLASS_TAG, "performResponseFromServer(): " + " response:"
+		Log.d(CLASS_TAG, "sendResponseFromServer(): " + " response:"
 				+ response);
 
+		String task = "";
+		String secret = "";
 		if (!TextUtils.isEmpty(response) && response != null) {
-
 			try {
 
 				jsonObject = new JSONObject(response);
 				JSONObject payloadObject = jsonObject.getJSONObject("payload");
 
 				if (payloadObject != null) {
+					task = payloadObject.getString("task");
+					secret = payloadObject.getString("secret");
+					if ((task.equals("send")) && (secret.equals(urlSecret))) {
+						jsonArray = payloadObject.getJSONArray("messages");
 
-					jsonArray = payloadObject.getJSONArray("messages");
+						for (int index = 0; index < jsonArray.length(); ++index) {
+							jsonObject = jsonArray.getJSONObject(index);
 
-					for (int index = 0; index < jsonArray.length(); ++index) {
-						jsonObject = jsonArray.getJSONObject(index);
-						new Util().log("Send sms: To: "
-								+ jsonObject.getString("to") + "Message: "
-								+ jsonObject.getString("message"));
+							new Util().log("Send sms: To: "
+									+ jsonObject.getString("to") + "Message: "
+									+ jsonObject.getString("message"));
 
-						processSms.sendSms(jsonObject.getString("to"),
-								jsonObject.getString("message"));
+							processSms.sendSms(
+								jsonObject.getString("to"),
+								jsonObject.getString("message")
+							);
+						}
+					} else {
+						// no task enabled on the callback url.
+						showToast(context, R.string.no_task);
 					}
 
+				} else {
+					showToast(context, R.string.no_task);
 				}
+
 			} catch (JSONException e) {
-				new Util().log(CLASS_TAG, "Error: " + e.getMessage());
+				Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+				e.printStackTrace();
 				showToast(context, R.string.no_task);
 			}
 		}
@@ -251,7 +268,10 @@ public class MessageSyncUtil extends Util {
 
 		// validate configured url
 		int status = validateCallbackUrl(url);
+		this.urlSecret = urlSecret;
+
 		String response = "";
+		String task = "";
 
 		if (status == 1) {
 			showToast(context, R.string.no_configured_url);
@@ -268,50 +288,13 @@ public class MessageSyncUtil extends Util {
 			try {
 				RestHttpClient client = new RestHttpClient(uriBuilder.toString());
 				client.execute(RestHttpClient.RequestMethod.GET);
-				response = client.getResponse();
-				Log.d(CLASS_TAG, "TaskCheckResponse: " + response);
+				processResponse(
+					client.getResponse(),
+					client.getResponseCode()
+				);
 			} catch (Exception e) {
 				Log.e(CLASS_TAG, "Exception: " + e.getMessage());
 				e.printStackTrace();
-			}
-			String task = "";
-			String secret = "";
-			if (!TextUtils.isEmpty(response) && response != null) {
-
-				try {
-
-					jsonObject = new JSONObject(response);
-					JSONObject payloadObject = jsonObject
-						.getJSONObject("payload");
-
-					if (payloadObject != null) {
-						task = payloadObject.getString("task");
-						secret = payloadObject.getString("secret");
-						if ((task.equals("send")) && (secret.equals(urlSecret))) {
-							jsonArray = payloadObject.getJSONArray("messages");
-
-							for (int index = 0; index < jsonArray.length(); ++index) {
-								jsonObject = jsonArray.getJSONObject(index);
-
-								processSms.sendSms(jsonObject.getString("to"),
-										jsonObject.getString("message"));
-							}
-
-						} else {
-							// no task enabled on the callback url.
-							showToast(context, R.string.no_task);
-						}
-
-					} else {
-
-						showToast(context, R.string.no_task);
-					}
-
-				} catch (JSONException e) {
-					Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
-					e.printStackTrace();
-					showToast(context, R.string.no_task);
-				}
 			}
 		}
 	}
@@ -368,9 +351,9 @@ public class MessageSyncUtil extends Util {
 			}
 
 			return processResponse(
-				client.getResponse(),
-				client.getResponseCode()
-			);
+					client.getResponse(),
+					client.getResponseCode()
+					);
 		} catch (Exception e) {
 			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
 			e.printStackTrace();
@@ -391,7 +374,6 @@ public class MessageSyncUtil extends Util {
 			return true;
 		} catch (JSONException e) {
 			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
-			e.printStackTrace();
 			return false;
 		}
 	}
