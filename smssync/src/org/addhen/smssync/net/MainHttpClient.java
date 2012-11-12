@@ -51,9 +51,9 @@ public class MainHttpClient {
 
 	private HttpParams httpParameters;
 
-	private int timeoutConnection = 60000;
+	private int timeoutConnection = 10000;
 
-	private int timeoutSocket = 60000;
+	private int timeoutSocket = 10000;
 
 	protected String url;
 
