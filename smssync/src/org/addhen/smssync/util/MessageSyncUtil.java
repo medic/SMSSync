@@ -49,9 +49,7 @@ public class MessageSyncUtil extends Util {
 
 	private String urlSecret;
 
-	private static JSONObject jsonObject;
-
-	private static JSONArray jsonArray;
+	private boolean responseSuccess;
 
 	private static final String CLASS_TAG = MessageSyncUtil.class.getSimpleName();
 
@@ -61,6 +59,7 @@ public class MessageSyncUtil extends Util {
 		this.context = context;
 		this.url = url;
 		this.urlSecret = "";
+		this.responseSuccess = false;
 		processSms = new ProcessSms(context);
 	}
 
@@ -71,6 +70,19 @@ public class MessageSyncUtil extends Util {
 		} catch (NumberFormatException e) {
 			return null;
 		}
+	}
+
+	private static void debug(Exception e) {
+		Log.d(CLASS_TAG, "Exception: " 
+			+ e.getClass().getName()
+			+ ' ' + getRootCause(e).getMessage()
+		);
+	}
+
+	private static Throwable getRootCause(Throwable throwable) {
+		if (throwable.getCause() != null)
+			return getRootCause(throwable.getCause());
+		return throwable;
 	}
 
 	/**
@@ -104,8 +116,7 @@ public class MessageSyncUtil extends Util {
 			return processResponse(resp, statusCode);
 
 		} catch (Exception e) {
-			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-			e.printStackTrace();
+			debug(e);
 			return false;
 		}
 
@@ -178,6 +189,9 @@ public class MessageSyncUtil extends Util {
 
 		String task = "";
 		String secret = "";
+		JSONObject jsonObject;
+		JSONArray jsonArray;
+
 		if (!TextUtils.isEmpty(response) && response != null) {
 			try {
 
@@ -212,8 +226,7 @@ public class MessageSyncUtil extends Util {
 				}
 
 			} catch (JSONException e) {
-				Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
-				e.printStackTrace();
+				debug(e);
 				showToast(context, R.string.no_task);
 			}
 		}
@@ -264,14 +277,15 @@ public class MessageSyncUtil extends Util {
 	 * @return void
 	 */
 	public void performTask(String urlSecret) {
-		Log.d(CLASS_TAG, "performTask(): perform a task");
+		Log.d(CLASS_TAG, "performTask");
+
+		this.urlSecret = urlSecret;
 
 		// validate configured url
 		int status = validateCallbackUrl(url);
-		this.urlSecret = urlSecret;
-
 		String response = "";
 		String task = "";
+		boolean success;
 
 		if (status == 1) {
 			showToast(context, R.string.no_configured_url);
@@ -288,13 +302,13 @@ public class MessageSyncUtil extends Util {
 			try {
 				RestHttpClient client = new RestHttpClient(uriBuilder.toString());
 				client.execute(RestHttpClient.RequestMethod.GET);
-				processResponse(
+				success = processResponse(
 					client.getResponse(),
 					client.getResponseCode()
 				);
 			} catch (Exception e) {
-				Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-				e.printStackTrace();
+				debug(e);
+				showToast(context, R.string.no_connection);
 			}
 		}
 	}
@@ -303,8 +317,12 @@ public class MessageSyncUtil extends Util {
 	/**
 	 * Does a HTTP request based on callback json configuration data
 	 */
-	private boolean processResponse(String resp, int statusCode) {
+	private boolean processResponse(String resp, int statusCode) throws Exception {
 		Log.d(CLASS_TAG, "processResponse(): response: " + resp);
+
+		boolean success = false;
+		boolean callback = false;
+		JSONObject cb;
 
 		// load Prefs
 		Prefs.loadPreferences(context);
@@ -314,10 +332,13 @@ public class MessageSyncUtil extends Util {
 			return false;
 		}
 
-		// continue until we get a success true value in payload with no
-		// callback. enforces success/message payload at end of callback chain.
-		boolean success = Util.extractPayloadJSON(resp);
-		boolean callback = extractCallbackJSON(resp);
+		success = Util.extractPayloadJSON(resp);
+		callback = extractCallbackJSON(resp);
+
+		// if we have a success payload anywhere in chain we are successful.
+		if (success) {
+			responseSuccess = true;
+		}
 
 		if (!callback || !Prefs.enableHttpCallbacks) {
 			if (success) {
@@ -325,17 +346,25 @@ public class MessageSyncUtil extends Util {
 					sendResponseFromServer(resp);
 				}
 			}
-			return success;
+			return responseSuccess;
 		}
 
 		try {
-			JSONObject cb = new JSONObject(resp).getJSONObject("callback");
+			cb = new JSONObject(resp).getJSONObject("callback");
+		} catch(Exception e) {
+			// callback is optional
+			debug(e);
+			return responseSuccess;
+		}
+
+		try {
 			String url = getCallbackURL(cb);
 			String method = getCallbackMethod(cb);
+			JSONObject headers = getCallbackHeaders(cb);
+
 			RestHttpClient client = new RestHttpClient(url);
 			client.setEntity(getCallbackData(cb));
 
-			JSONObject headers = getCallbackHeaders(cb);
 			Iterator<String> iter = headers.keys();
 			while (iter.hasNext()) {
 				String k = iter.next();
@@ -351,13 +380,11 @@ public class MessageSyncUtil extends Util {
 			}
 
 			return processResponse(
-					client.getResponse(),
-					client.getResponseCode()
-					);
+				client.getResponse(),
+				client.getResponseCode()
+			);
 		} catch (Exception e) {
-			Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-			e.printStackTrace();
-			return false;
+			throw e;
 		}
 	}
 
@@ -373,7 +400,7 @@ public class MessageSyncUtil extends Util {
 			JSONObject test = new JSONObject(json_data).getJSONObject("callback");
 			return true;
 		} catch (JSONException e) {
-			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+			debug(e);
 			return false;
 		}
 	}
@@ -401,7 +428,7 @@ public class MessageSyncUtil extends Util {
 			Log.d(CLASS_TAG, "callback URL is: " + url);
 			return url;
 		} catch (JSONException e) {
-			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+			debug(e);
 		}
 		return null;
 	};
@@ -417,7 +444,7 @@ public class MessageSyncUtil extends Util {
 			Log.d(CLASS_TAG, "getCallbackMethod: options" + options);
 			return options.getString("method");
 		} catch (JSONException e) {
-			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+			debug(e);
 		}
 		return null;
 	};
@@ -432,7 +459,7 @@ public class MessageSyncUtil extends Util {
 			String data = callback.getJSONObject("data").toString();
 			return data;
 		} catch (JSONException e) {
-			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+			debug(e);
 		}
 		return null;
 	};
@@ -448,7 +475,7 @@ public class MessageSyncUtil extends Util {
 			JSONObject headers = options.getJSONObject("headers");
 			return headers;
 		} catch (JSONException e) {
-			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
+			debug(e);
 		}
 		return null;
 	};

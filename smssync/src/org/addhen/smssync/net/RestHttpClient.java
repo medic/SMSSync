@@ -51,6 +51,26 @@ public class RestHttpClient extends MainHttpClient {
 
     private String response;
 
+    public RestHttpClient(String url) {
+        super(url);
+        params = new ArrayList<NameValuePair>();
+        headers = new ArrayList<NameValuePair>();
+        headers.add(new BasicNameValuePair("User-Agent", USER_AGENT));
+
+        try {
+            URI uri = new URI(url);
+            String userInfo = uri.getUserInfo();
+            Log.d(CLASS_TAG, "getUserInfo: " + userInfo);
+            if (userInfo != null) {
+                headers.add(
+                    new BasicNameValuePair(
+                        "Authorization", "Basic " + base64Encode(userInfo)));
+            }
+        } catch (URISyntaxException e) {
+			debug(e);
+        }
+    }
+
     public String getResponse() {
         return response;
     }
@@ -72,27 +92,18 @@ public class RestHttpClient extends MainHttpClient {
         return Base64.encodeToString(bytes, Base64.NO_WRAP);
     }
 
-    public RestHttpClient(String url) {
-        super(url);
-        params = new ArrayList<NameValuePair>();
-        headers = new ArrayList<NameValuePair>();
-        headers.add(new BasicNameValuePair("User-Agent", USER_AGENT));
+	public static void debug(Exception e) {
+		Log.d(CLASS_TAG, "Exception: " 
+			+ e.getClass().getName()
+			+ ' ' + getRootCause(e).getMessage()
+		);
+	}
 
-        try {
-            URI uri = new URI(url);
-            String userInfo = uri.getUserInfo();
-            Log.d(CLASS_TAG, "getUserInfo: " + userInfo);
-            if (userInfo != null) {
-                headers.add(
-                    new BasicNameValuePair(
-                        "Authorization", "Basic " + base64Encode(userInfo)));
-            }
-        } catch (URISyntaxException e) {
-            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
+	public static Throwable getRootCause(Throwable throwable) {
+		if (throwable.getCause() != null)
+			return getRootCause(throwable.getCause());
+		return throwable;
+	}
     public void addParam(String name, String value) {
         params.add(new BasicNameValuePair(name, value));
     }
@@ -175,7 +186,7 @@ public class RestHttpClient extends MainHttpClient {
         }
     }
 
-    private void executeRequest(HttpUriRequest request, String url) {
+    private void executeRequest(HttpUriRequest request, String url) throws Exception {
 
         HttpResponse httpResponse;
 
@@ -196,13 +207,11 @@ public class RestHttpClient extends MainHttpClient {
             }
 
         } catch (ClientProtocolException e)  {
-            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             httpclient.getConnectionManager().shutdown();
-            e.printStackTrace();
+			throw e;
         } catch (IOException e) {
-            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
             httpclient.getConnectionManager().shutdown();
-            e.printStackTrace();
+            throw e;
         }
     }
 
@@ -217,14 +226,12 @@ public class RestHttpClient extends MainHttpClient {
                 sb.append(line + "\n");
             }
         } catch (IOException e) {
-            Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-            e.printStackTrace();
+            debug(e);
         } finally {
             try {
                 is.close();
             } catch (IOException e) {
-                Log.e(CLASS_TAG, "Exception: " + e.getMessage());
-                e.printStackTrace();
+				debug(e);
             }
         }
         return sb.toString();
