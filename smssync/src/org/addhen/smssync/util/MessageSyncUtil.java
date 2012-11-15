@@ -320,22 +320,20 @@ public class MessageSyncUtil extends Util {
 	private boolean processResponse(String resp, int statusCode) throws Exception {
 		Log.d(CLASS_TAG, "processResponse(): response: " + resp);
 
-		boolean success = false;
-		boolean callback = false;
-		JSONObject cb;
-
-		// load Prefs
-		Prefs.loadPreferences(context);
-
 		// any req in the chain fails, return false
 		if (statusCode != 200 && statusCode != 201) {
 			return false;
 		}
 
-		success = Util.extractPayloadJSON(resp);
-		callback = extractCallbackJSON(resp);
+		// load Prefs
+		// for now just enable callbacks when reply from server is enabled
+		Prefs.loadPreferences(context);
+		Prefs.enableHttpCallbacks = Prefs.enableReplyFrmServer;
 
-		// if we have a success payload anywhere in chain we are successful.
+		boolean success = Util.extractPayloadJSON(resp);
+		boolean callback = extractCallbackJSON(resp);
+
+		// if we have a success payload anywhere in chain we succeeded.
 		if (success) {
 			responseSuccess = true;
 		}
@@ -349,6 +347,8 @@ public class MessageSyncUtil extends Util {
 			return responseSuccess;
 		}
 
+		JSONObject cb;
+
 		try {
 			cb = new JSONObject(resp).getJSONObject("callback");
 		} catch(Exception e) {
@@ -361,9 +361,7 @@ public class MessageSyncUtil extends Util {
 			String url = getCallbackURL(cb);
 			String method = getCallbackMethod(cb);
 			JSONObject headers = getCallbackHeaders(cb);
-
 			RestHttpClient client = new RestHttpClient(url);
-			client.setEntity(getCallbackData(cb));
 
 			Iterator<String> iter = headers.keys();
 			while (iter.hasNext()) {
@@ -372,8 +370,10 @@ public class MessageSyncUtil extends Util {
 			}
 
 			if (method.equals("POST")) {
+				client.setEntity(getCallbackData(cb));
 				client.execute(RestHttpClient.RequestMethod.POST);
 			} else if (method.equals("PUT")) {
+				client.setEntity(getCallbackData(cb));
 				client.execute(RestHttpClient.RequestMethod.PUT);
 			} else {
 				client.execute(RestHttpClient.RequestMethod.GET);
@@ -450,16 +450,23 @@ public class MessageSyncUtil extends Util {
 	};
 
 	/**
-	 * @param JSONObject callback - JSONObject representing the callback 
-	 * @return String data - The data/entity of the callback json
+	 * @param JSONObject callback - JSONObject representing the callback object
+	 *
+	 * @return String data - The string value of the data property from the
+	 * callback object.  The data attribute can be a string or valid JSON
+	 * object.  
+	 *
 	 */
 	private static String getCallbackData(JSONObject callback) {
 		Log.d(CLASS_TAG, "getCallbackData()");
 		try {
-			String data = callback.getJSONObject("data").toString();
-			return data;
+			return callback.getJSONObject("data").toString();
 		} catch (JSONException e) {
-			debug(e);
+			try {
+				return callback.getString("data");
+			} catch (JSONException f) {
+				debug(f);
+			}
 		}
 		return null;
 	};

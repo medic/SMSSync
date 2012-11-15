@@ -43,7 +43,7 @@ public class RestHttpClient extends MainHttpClient {
 
     private static final String CLASS_TAG = RestHttpClient.class.getSimpleName();
 
-    private static final String USER_AGENT = "SMSSync-Android/1.0";
+    private static final String USER_AGENT = "SMSSync-Android/2.0";
 
     public enum RequestMethod {
             GET, POST, PUT
