@@ -1,9 +1,13 @@
 # HTTP Callbacks
 
-HTTP Callbacks allows your server to send instructions to the gateway to make additional HTTP requests.  At the moment the callback request is not guaranteed or tracked in any way by SMSSync, other than what you can track on your server or whether or not the callback request was received by the target. 
+HTTP Callbacks allows your server to send instructions to the gateway to make
+additional HTTP requests.  At the moment the callback request is not guaranteed
+or tracked in any way by SMSSync, other than what you can track on your server
+or whether or not the callback request was received by the target. 
 
 
-In your usual response to SMSSync you include a `callback` object with  `options` and optionally `data` properties for SMSSync to execute the request.
+In your usual response to SMSSync you include a `callback` object with
+`options` and optionally `data` properties for SMSSync to execute the request.
 
 ## Configuration
 
@@ -11,7 +15,8 @@ In SMSSync you must enable the **Get Reply From Server** option.
 
 ## Example 
 
-In this example our server wants to tell SMSSync to make a POST request to another web service as well as send a success message to our SMS client.
+In this example our server wants to tell SMSSync to make a POST request to
+another web service as well as send a success message to our SMS client.
 
 #### Response with callback property:
 
@@ -71,6 +76,13 @@ We are open to changes and pull requests but currently there are some limitation
 
 ## About
 
-This came out of a specific architectural restriction using CouchDB because there is a limited amount of things CouchDB can do with one request.  For example we can create a document but cannot lookup another document in the same request.  This allows us to use the gateway to make additional requests and changes to our database or elsewhere.  It is also potentially useful to chain requests together when dealing with distributed systems.  
+This came out of a specific architectural restriction using CouchDB because
+there is a limited amount of things CouchDB can do with one request.  For
+example we can create a document but cannot lookup another document in the same
+request.  This allows us to use the gateway to make additional requests and
+changes to our database or elsewhere.  It is also potentially useful to chain
+requests together when dealing with distributed systems.  
 
-We also wanted to keep intrastructure requirments to a minimum, so we include this functionality in the gateway itself rather than another process.
+We also wanted to keep intrastructure requirments to a minimum, so we include
+this functionality in the gateway itself rather than another process.
+
