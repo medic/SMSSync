@@ -34,6 +34,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -176,6 +177,21 @@ public class MessageSyncUtil extends Util {
 
 	}
 
+    private void sendSms(String to, String message) {
+
+        String lineNumber = "+" + getLineNumber(context);
+
+        // Avoid potential endless loop and costly sms bill.  
+        if (!PhoneNumberUtils.compare(lineNumber,to)) {
+            processSms.sendSms(to, message);
+        } else {
+            Log.e(
+                CLASS_TAG, "SMS NOT sent, destination is same "
+                + "as device lineNumber: " + lineNumber
+            );
+        }
+    }
+
 	/**
 	 * Sends messages received from the server as SMS. Only send outgoing
 	 * messages when success is true.
@@ -211,7 +227,7 @@ public class MessageSyncUtil extends Util {
 									+ jsonObject.getString("to") + "Message: "
 									+ jsonObject.getString("message"));
 
-							processSms.sendSms(
+							sendSms(
 								jsonObject.getString("to"),
 								jsonObject.getString("message")
 							);

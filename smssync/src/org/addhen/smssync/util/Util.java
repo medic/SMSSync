@@ -50,6 +50,7 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
@@ -441,6 +442,18 @@ public class Util {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	/**
+	 * Return phone number of the device 
+	 * 
+	 * @param Context context - the activity calling this method.
+	 * @return String - phone number of the device, NOT including '+' prefix
+	 *
+	 */
+	public static String getLineNumber(Context context) {
+		TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+		return tMgr.getLine1Number();
 	}
 
 	public static String getPhoneNumber(Context context) {
