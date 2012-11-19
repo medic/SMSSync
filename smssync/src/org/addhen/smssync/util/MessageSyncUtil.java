@@ -76,7 +76,7 @@ public class MessageSyncUtil extends Util {
 	private static void debug(Exception e) {
 		Log.d(CLASS_TAG, "Exception: " 
 			+ e.getClass().getName()
-			+ ' ' + getRootCause(e).getMessage()
+			+ " " + getRootCause(e).getMessage()
 		);
 	}
 
@@ -322,6 +322,9 @@ public class MessageSyncUtil extends Util {
 					client.getResponse(),
 					client.getResponseCode()
 				);
+				if (!success) {
+					showToast(context, R.string.no_connection);
+				}
 			} catch (Exception e) {
 				debug(e);
 				showToast(context, R.string.no_connection);

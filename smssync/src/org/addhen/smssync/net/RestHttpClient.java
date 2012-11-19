@@ -95,7 +95,7 @@ public class RestHttpClient extends MainHttpClient {
 	public static void debug(Exception e) {
 		Log.d(CLASS_TAG, "Exception: " 
 			+ e.getClass().getName()
-			+ ' ' + getRootCause(e).getMessage()
+			+ " " + getRootCause(e).getMessage()
 		);
 	}
 

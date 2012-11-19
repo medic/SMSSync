@@ -283,6 +283,7 @@ public class Util {
 	 */
 	public static void showFailNotification(Context context, String message,
 			String notification_title) {
+		Log.d(CLASS_TAG, "showFailNotification()");
 
 		NotificationManager notificationManager = (NotificationManager) context
 				.getSystemService(Context.NOTIFICATION_SERVICE);
