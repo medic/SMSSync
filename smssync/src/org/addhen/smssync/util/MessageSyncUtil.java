@@ -206,44 +206,48 @@ public class MessageSyncUtil extends Util {
 		String task = "";
 		String secret = "";
 		JSONObject jsonObject;
+		JSONObject payloadObject = null;
 		JSONArray jsonArray;
 
 		if (!TextUtils.isEmpty(response) && response != null) {
 			try {
-
 				jsonObject = new JSONObject(response);
-				JSONObject payloadObject = jsonObject.getJSONObject("payload");
-
-				if (payloadObject != null) {
-					task = payloadObject.getString("task");
-					secret = payloadObject.getString("secret");
-					if ((task.equals("send")) && (secret.equals(urlSecret))) {
-						jsonArray = payloadObject.getJSONArray("messages");
-
-						for (int index = 0; index < jsonArray.length(); ++index) {
-							jsonObject = jsonArray.getJSONObject(index);
-
-							new Util().log("Send sms: To: "
-									+ jsonObject.getString("to") + "Message: "
-									+ jsonObject.getString("message"));
-
-							sendSms(
-								jsonObject.getString("to"),
-								jsonObject.getString("message")
-							);
-						}
-					} else {
-						// no task enabled on the callback url.
-						showToast(context, R.string.no_task);
-					}
-
-				} else {
-					showToast(context, R.string.no_task);
-				}
-
+				payloadObject = jsonObject.getJSONObject("payload");
 			} catch (JSONException e) {
 				debug(e);
-				showToast(context, R.string.no_task);
+			}
+		}
+
+		if (payloadObject != null) {
+			try {
+				//secret is optional
+				secret = payloadObject.getString("secret");
+			} catch (JSONException e) {
+				secret = "";
+			}
+		}
+
+		if (payloadObject != null) {
+			try {
+				task = payloadObject.getString("task");
+				if ((task.equals("send")) && (secret.equals(urlSecret))) {
+					jsonArray = payloadObject.getJSONArray("messages");
+
+					for (int index = 0; index < jsonArray.length(); ++index) {
+						jsonObject = jsonArray.getJSONObject(index);
+
+						new Util().log("Send sms: To: "
+								+ jsonObject.getString("to") + "Message: "
+								+ jsonObject.getString("message"));
+
+						sendSms(
+							jsonObject.getString("to"),
+							jsonObject.getString("message")
+						);
+					}
+				}
+			} catch (JSONException e) {
+				debug(e);
 			}
 		}
 
@@ -347,23 +351,17 @@ public class MessageSyncUtil extends Util {
 		// load Prefs
 		// for now just enable callbacks when reply from server is enabled
 		Prefs.loadPreferences(context);
-		Prefs.enableHttpCallbacks = Prefs.enableReplyFrmServer;
 
 		boolean success = Util.extractPayloadJSON(resp);
 		boolean callback = extractCallbackJSON(resp);
 
 		// if we have a success payload anywhere in chain we succeeded.
+		// also we should potentially send out responses.
 		if (success) {
 			responseSuccess = true;
-		}
-
-		if (!callback || !Prefs.enableHttpCallbacks) {
-			if (success) {
-				if (Prefs.enableReplyFrmServer) {
-					sendResponseFromServer(resp);
-				}
+			if (Prefs.enableReplyFrmServer) {
+				sendResponseFromServer(resp);
 			}
-			return responseSuccess;
 		}
 
 		JSONObject cb;
