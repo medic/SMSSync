@@ -25,11 +25,16 @@ import org.addhen.smssync.net.MainHttpClient;
 
 import android.app.Application;
 
+import org.acra.*;
+import org.acra.annotation.*;
+
+
 /**
  * This class is for maintaining global application state.
  * 
  * @author eyedol
  */
+@ReportsCrashes(formKey = "dGNLaWFIQmY4aVFyZFRHcEVsWFZmc1E6MQ") 
 public class MainApplication extends Application {
 
     public static final String TAG = "SmsSyncApplication";
@@ -42,6 +47,7 @@ public class MainApplication extends Application {
 
     @Override
     public void onCreate() {
+        ACRA.init(this);
         super.onCreate();
 
         // Open database connection when the application starts.
