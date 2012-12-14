@@ -58,9 +58,9 @@ public class SmsReceiverService extends Service {
 
 	private static final Object mStartingServiceSync = new Object();
 
-	private static PowerManager.WakeLock mStartingService;
+	private static PowerManager.WakeLock wakelock = null;
 
-	private static WifiManager.WifiLock wifilock;
+	private static WifiManager.WifiLock wifilock = null;
 
 	private SmsMessage sms;
 
@@ -69,12 +69,23 @@ public class SmsReceiverService extends Service {
 
 	private ProcessSms processSms;
 
+	synchronized private static PowerManager.WakeLock getPhoneWakeLock(Context context) {
+		if (wakelock == null) {
+			PowerManager mgr = (PowerManager) context
+					.getSystemService(Context.POWER_SERVICE);
+			wakelock = mgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+					CLASS_TAG);
+			wakelock.setReferenceCounted(false);
+		}
+		return wakelock;
+	}
+
 	synchronized protected static WifiManager.WifiLock getWifiLock(Context context) {
 		// keep wifi alive
 		if (wifilock == null) {
 			WifiManager manager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
 			wifilock = manager.createWifiLock(CLASS_TAG);
-			wifilock.setReferenceCounted(true);
+			wifilock.setReferenceCounted(false);
 		}
 		return wifilock;
 	}
@@ -224,18 +235,12 @@ public class SmsReceiverService extends Service {
 	 */
 	public static void beginStartingService(Context context, Intent intent) {
 		synchronized (mStartingServiceSync) {
+			if (!getPhoneWakeLock(context).isHeld()) 
+				getPhoneWakeLock(context).acquire();
 
-			if (mStartingService == null) {
-				PowerManager pm = (PowerManager) context
-						.getSystemService(Context.POWER_SERVICE);
-				mStartingService = pm.newWakeLock(
-						PowerManager.PARTIAL_WAKE_LOCK, CLASS_TAG);
-				mStartingService.setReferenceCounted(false);
-			}
-
-			mStartingService.acquire();
 			if (!getWifiLock(context).isHeld()) 
 				getWifiLock(context).acquire();
+
 			context.startService(intent);
 		}
 	}
@@ -253,9 +258,11 @@ public class SmsReceiverService extends Service {
 
 		synchronized (mStartingServiceSync) {
 
-			if (mStartingService != null) {
+			if (wakelock != null) {
 				if (service.stopSelfResult(startId)) {
-					mStartingService.release();
+					wakelock.release();
+					if (wifilock != null)
+						wifilock.release();
 				}
 			}
 
