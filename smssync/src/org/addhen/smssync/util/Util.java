@@ -50,6 +50,7 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
@@ -217,21 +218,16 @@ public class Util {
 	 * @return String
 	 */
 	public static boolean extractPayloadJSON(String json_data) {
-		Log.i(CLASS_TAG, "extracPayloadJSON(): Extracting payload JSON data"
+		Log.d(CLASS_TAG, "extracPayloadJSON(): Extracting payload JSON data"
 				+ json_data);
 		try {
-
 			jsonObject = new JSONObject(json_data);
 			return jsonObject.getJSONObject("payload").getBoolean("success");
-
 		} catch (JSONException e) {
 			Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
 			return false;
 		}
-
 	}
-
-	
 
 	/**
 	 * Show toast
@@ -287,6 +283,7 @@ public class Util {
 	 */
 	public static void showFailNotification(Context context, String message,
 			String notification_title) {
+		Log.d(CLASS_TAG, "showFailNotification()");
 
 		NotificationManager notificationManager = (NotificationManager) context
 				.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -446,6 +443,18 @@ public class Util {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	/**
+	 * Return phone number of the device 
+	 * 
+	 * @param Context context - the activity calling this method.
+	 * @return String - phone number of the device, NOT including '+' prefix
+	 *
+	 */
+	public static String getLineNumber(Context context) {
+		TelephonyManager tMgr = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+		return tMgr.getLine1Number();
 	}
 
 	public static String getPhoneNumber(Context context) {

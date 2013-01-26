@@ -22,18 +22,19 @@ package org.addhen.smssync.util;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Iterator;
 
 import org.addhen.smssync.Prefs;
 import org.addhen.smssync.ProcessSms;
 import org.addhen.smssync.R;
 import org.addhen.smssync.models.MessagesModel;
-import org.addhen.smssync.net.MainHttpClient;
-import org.addhen.smssync.net.MessageSyncHttpClient;
+import org.addhen.smssync.net.RestHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -47,56 +48,79 @@ public class MessageSyncUtil extends Util {
 
 	private String url;
 
-	private static JSONObject jsonObject;
+	private String urlSecret;
 
-	private static JSONArray jsonArray;
+	private boolean responseSuccess;
 
-	private static final String CLASS_TAG = MessageSyncUtil.class
-			.getSimpleName();
-
-	private MessageSyncHttpClient msgSyncHttpClient;
+	private static final String CLASS_TAG = MessageSyncUtil.class.getSimpleName();
 
 	private ProcessSms processSms;
 
 	public MessageSyncUtil(Context context, String url) {
 		this.context = context;
 		this.url = url;
-		this.msgSyncHttpClient = new MessageSyncHttpClient(context, url);
+		this.urlSecret = "";
+		this.responseSuccess = false;
 		processSms = new ProcessSms(context);
+	}
+
+	private static String formatDate(String date) {
+		try {
+
+			return Util.formatDateTime(Long.parseLong(date), "MM-dd-yy kk:mm");
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
+
+	private static void debug(Exception e) {
+		Log.d(CLASS_TAG, "Exception: " 
+			+ e.getClass().getName()
+			+ " " + getRootCause(e).getMessage()
+		);
+	}
+
+	private static Throwable getRootCause(Throwable throwable) {
+		if (throwable.getCause() != null)
+			return getRootCause(throwable.getCause());
+		return throwable;
 	}
 
 	/**
 	 * Posts received SMS to a configured callback URL.
 	 * 
-	 * @param String
-	 *            apiKey
-	 * @param String
-	 *            fromAddress
-	 * @param String
-	 *            messageBody
 	 * @return boolean
 	 */
-	public boolean postToAWebService(String messagesFrom, String messagesBody,
-			String messagesTimestamp, String messagesId, String secret) {
-		log("postToAWebService(): Post received SMS to configured URL:"
-				+ Prefs.website + " messagesTimestamp: " + messagesTimestamp
-				+ " messagesBody: " + messagesBody + " messagesFrom "
-				+ messagesFrom + " Secret " + secret);
+	public boolean postToAWebService(String from, String message,
+			String sentTimestamp, String messageID, String secret) {
 
-		HashMap<String, String> params = new HashMap<String, String>();
-		Prefs.loadPreferences(context);
+		if (TextUtils.isEmpty(url)) { return false; }
 
-		if (!TextUtils.isEmpty(url)) {
-			params.put("secret", secret);
-			params.put("from", messagesFrom);
-			params.put("message", messagesBody);
-			params.put("sent_timestamp", messagesTimestamp);
-			params.put("sent_to", getPhoneNumber(context));
-			params.put("message_id", messagesId);
-			return msgSyncHttpClient.postSmsToWebService(params);
+		try {
+
+			RestHttpClient client = new RestHttpClient(url);
+
+			client.addParam("secret", secret);
+			client.addParam("from", from);
+			client.addParam("message", message);
+			client.addParam("message_id", messageID);
+
+			if (formatDate(sentTimestamp) != null) {
+				client.addParam("sent_timestamp", sentTimestamp);
+			}
+
+			client.addParam("sent_to", getPhoneNumber(context));
+			client.execute(RestHttpClient.RequestMethod.POST);
+
+			int statusCode = client.getResponseCode();
+			String resp = client.getResponse();
+			return processResponse(resp, statusCode);
+
+		} catch (Exception e) {
+			debug(e);
+			return false;
 		}
 
-		return false;
 	}
 
 	/**
@@ -111,7 +135,7 @@ public class MessageSyncUtil extends Util {
 	 * @return int
 	 */
 	public int snycToWeb(int messageId, String secret) {
-		log("syncToWeb(): push pending messages to the Sync URL");
+		Log.d(CLASS_TAG, "syncToWeb(): push pending messages to the Sync URL");
 		MessagesModel model = new MessagesModel();
 		List<MessagesModel> listMessages = new ArrayList<MessagesModel>();
 		// check if it should sync by id
@@ -132,10 +156,10 @@ public class MessageSyncUtil extends Util {
 			}
 
 			for (MessagesModel messages : listMessages) {
-				log("processing");
+				Log.d(CLASS_TAG, "processing messages");
 				if (processSms.routePendingMessages(messages.getMessageFrom(),
-						messages.getMessage(), messages.getMessageDate(),
-						String.valueOf(messages.getMessageId()))) {
+							messages.getMessage(), messages.getMessageDate(),
+							String.valueOf(messages.getMessageId()))) {
 
 					// / if it successfully pushes message, delete message
 					// from db
@@ -153,41 +177,77 @@ public class MessageSyncUtil extends Util {
 
 	}
 
+    private void sendSms(String to, String message) {
+
+        String lineNumber = "+" + getLineNumber(context);
+
+        // Avoid potential endless loop and costly sms bill.  
+        if (!PhoneNumberUtils.compare(lineNumber,to)) {
+            processSms.sendSms(to, message);
+        } else {
+            Log.e(
+                CLASS_TAG, "SMS NOT sent, destination is same "
+                + "as device lineNumber: " + lineNumber
+            );
+        }
+    }
+
 	/**
-	 * Sends messages received from the server as SMS.
+	 * Sends messages received from the server as SMS. Only send outgoing
+	 * messages when success is true.
 	 * 
 	 * @param String
 	 *            response - the response from the server.
 	 */
-	public void sendResponseFromServer(String response) {
-		Logger.log(CLASS_TAG, "performResponseFromServer(): " + " response:"
+	private void sendResponseFromServer(String response) {
+		Log.d(CLASS_TAG, "sendResponseFromServer(): " + " response:"
 				+ response);
 
+		String task = "";
+		String secret = "";
+		JSONObject jsonObject;
+		JSONObject payloadObject = null;
+		JSONArray jsonArray;
+
 		if (!TextUtils.isEmpty(response) && response != null) {
-
 			try {
-
 				jsonObject = new JSONObject(response);
-				JSONObject payloadObject = jsonObject.getJSONObject("payload");
+				payloadObject = jsonObject.getJSONObject("payload");
+			} catch (JSONException e) {
+				debug(e);
+			}
+		}
 
-				if (payloadObject != null) {
+		if (payloadObject != null) {
+			try {
+				//secret is optional
+				secret = payloadObject.getString("secret");
+			} catch (JSONException e) {
+				secret = "";
+			}
+		}
 
+		if (payloadObject != null) {
+			try {
+				task = payloadObject.getString("task");
+				if ((task.equals("send")) && (secret.equals(urlSecret))) {
 					jsonArray = payloadObject.getJSONArray("messages");
 
 					for (int index = 0; index < jsonArray.length(); ++index) {
 						jsonObject = jsonArray.getJSONObject(index);
+
 						new Util().log("Send sms: To: "
 								+ jsonObject.getString("to") + "Message: "
 								+ jsonObject.getString("message"));
 
-						processSms.sendSms(jsonObject.getString("to"),
-								jsonObject.getString("message"));
+						sendSms(
+							jsonObject.getString("to"),
+							jsonObject.getString("message")
+						);
 					}
-
 				}
 			} catch (JSONException e) {
-				new Util().log(CLASS_TAG, "Error: " + e.getMessage());
-				showToast(context, R.string.no_task);
+				debug(e);
 			}
 		}
 
@@ -200,7 +260,7 @@ public class MessageSyncUtil extends Util {
 	 * @return int - status
 	 */
 	public static int processMessages() {
-		Logger.log(CLASS_TAG,
+		Log.d(CLASS_TAG,
 				"processMessages(): Process text messages as received from the user's phone");
 		List<MessagesModel> listMessages = new ArrayList<MessagesModel>();
 		int messageId = 0;
@@ -237,12 +297,16 @@ public class MessageSyncUtil extends Util {
 	 * @return void
 	 */
 	public void performTask(String urlSecret) {
-		Logger.log(CLASS_TAG, "performTask(): perform a task");
-		// load Prefs
-		Prefs.loadPreferences(context);
+		Log.d(CLASS_TAG, "performTask");
+
+		this.urlSecret = urlSecret;
 
 		// validate configured url
 		int status = validateCallbackUrl(url);
+		String response = "";
+		String task = "";
+		boolean success;
+
 		if (status == 1) {
 			showToast(context, R.string.no_configured_url);
 		} else if (status == 2) {
@@ -255,48 +319,188 @@ public class MessageSyncUtil extends Util {
 
 			uriBuilder.append("?task=send");
 
-			String response = MainHttpClient.getFromWebService(uriBuilder
-					.toString());
-			Log.d(CLASS_TAG, "TaskCheckResponse: " + response);
-			String task = "";
-			String secret = "";
-			if (!TextUtils.isEmpty(response) && response != null) {
-
-				try {
-
-					jsonObject = new JSONObject(response);
-					JSONObject payloadObject = jsonObject
-							.getJSONObject("payload");
-
-					if (payloadObject != null) {
-						task = payloadObject.getString("task");
-						secret = payloadObject.getString("secret");
-						if ((task.equals("send")) && (secret.equals(urlSecret))) {
-							jsonArray = payloadObject.getJSONArray("messages");
-
-							for (int index = 0; index < jsonArray.length(); ++index) {
-								jsonObject = jsonArray.getJSONObject(index);
-
-								processSms.sendSms(jsonObject.getString("to"),
-										jsonObject.getString("message"));
-							}
-
-						} //else {
-							// no task enabled on the callback URL.
-							// don't bother hassling user with another notification.
-							//showToast(context, R.string.no_task);
-						//}
-
-					} else { // 'payload' data may not be present in JSON response
-
-						showToast(context, R.string.no_task);
-					}
-
-				} catch (JSONException e) {
-					log("Error: " + e.getMessage());
-					showToast(context, R.string.no_task);
+			try {
+				RestHttpClient client = new RestHttpClient(uriBuilder.toString());
+				client.execute(RestHttpClient.RequestMethod.GET);
+				success = processResponse(
+					client.getResponse(),
+					client.getResponseCode()
+				);
+				if (!success) {
+					showToast(context, R.string.no_connection);
 				}
+			} catch (Exception e) {
+				debug(e);
+				showToast(context, R.string.no_connection);
 			}
 		}
 	}
+
+
+	/**
+	 * Does a HTTP request based on callback json configuration data
+	 */
+	private boolean processResponse(String resp, int statusCode) throws Exception {
+		Log.d(CLASS_TAG, "processResponse(): response: " + resp);
+
+		// any req in the chain fails, return false
+		if (statusCode != 200 && statusCode != 201) {
+			return false;
+		}
+
+		// load Prefs
+		// for now just enable callbacks when reply from server is enabled
+		Prefs.loadPreferences(context);
+
+		boolean success = Util.extractPayloadJSON(resp);
+		boolean callback = extractCallbackJSON(resp);
+
+		// if we have a success payload anywhere in chain we succeeded.
+		// also we should potentially send out responses.
+		if (success) {
+			responseSuccess = true;
+			if (Prefs.enableReplyFrmServer) {
+				sendResponseFromServer(resp);
+			}
+		}
+
+		JSONObject cb;
+
+		try {
+			cb = new JSONObject(resp).getJSONObject("callback");
+		} catch(Exception e) {
+			// callback is optional
+			debug(e);
+			return responseSuccess;
+		}
+
+		try {
+			String url = getCallbackURL(cb);
+			String method = getCallbackMethod(cb);
+			JSONObject headers = getCallbackHeaders(cb);
+			RestHttpClient client = new RestHttpClient(url);
+
+			Iterator<String> iter = headers.keys();
+			while (iter.hasNext()) {
+				String k = iter.next();
+				client.addHeader(k, headers.getString(k));
+			}
+
+			if (method.equals("POST")) {
+				client.setEntity(getCallbackData(cb));
+				client.execute(RestHttpClient.RequestMethod.POST);
+			} else if (method.equals("PUT")) {
+				client.setEntity(getCallbackData(cb));
+				client.execute(RestHttpClient.RequestMethod.PUT);
+			} else {
+				client.execute(RestHttpClient.RequestMethod.GET);
+			}
+
+			return processResponse(
+				client.getResponse(),
+				client.getResponseCode()
+			);
+		} catch (Exception e) {
+			throw e;
+		}
+	}
+
+	/**
+	 * Extract callback JSON data
+	 * 
+	 * @apram json_data - The json data to be formatted.
+	 * @return boolean
+	 */
+	private static boolean extractCallbackJSON(String json_data) {
+		Log.d(CLASS_TAG, "extractCallbackJSON(): Extracting callback JSON data" + json_data);
+		try {
+			JSONObject test = new JSONObject(json_data).getJSONObject("callback");
+			return true;
+		} catch (JSONException e) {
+			debug(e);
+			return false;
+		}
+	}
+
+
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return String url - The URL from the callback response
+	 */
+	private static String getCallbackURL(JSONObject callback) {
+		Log.d(CLASS_TAG, "getCallbackURL:");
+		try {
+			JSONObject options = callback.getJSONObject("options");
+			String host = options.getString("host");
+			String port = options.getString("port");
+			String path = options.getString("path");
+			String url = "";
+			if (port == "null" || TextUtils.isEmpty(port)) {
+				url = "http://" + host + path;
+			} else if (port == "443") {
+				url = "https://" + host + path;
+			} else {
+				url = "http://" + host + ":" + port + path;
+			}
+			Log.d(CLASS_TAG, "callback URL is: " + url);
+			return url;
+		} catch (JSONException e) {
+			debug(e);
+		}
+		return null;
+	};
+
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return String method - The method string from the callback options
+	 */
+	private static String getCallbackMethod(JSONObject callback) {
+		Log.d(CLASS_TAG, "getCallbackMethod()");
+		try {
+			JSONObject options = callback.getJSONObject("options");
+			Log.d(CLASS_TAG, "getCallbackMethod: options" + options);
+			return options.getString("method");
+		} catch (JSONException e) {
+			debug(e);
+		}
+		return null;
+	};
+
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback object
+	 *
+	 * @return String data - The string value of the data property from the
+	 * callback object.  The data attribute can be a string or valid JSON
+	 * object.  
+	 *
+	 */
+	private static String getCallbackData(JSONObject callback) {
+		Log.d(CLASS_TAG, "getCallbackData()");
+		try {
+			return callback.getJSONObject("data").toString();
+		} catch (JSONException e) {
+			try {
+				return callback.getString("data");
+			} catch (JSONException f) {
+				debug(f);
+			}
+		}
+		return null;
+	};
+
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return JSONObject headers - The headers object of the callback json
+	 */
+	private static JSONObject getCallbackHeaders(JSONObject callback) {
+		Log.d(CLASS_TAG, "getCallbackHeaders()");
+		try {
+			JSONObject options = callback.getJSONObject("options");
+			JSONObject headers = options.getJSONObject("headers");
+			return headers;
+		} catch (JSONException e) {
+			debug(e);
+		}
+		return null;
+	};
 }

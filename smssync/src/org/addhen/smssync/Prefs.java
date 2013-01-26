@@ -51,6 +51,8 @@ public class Prefs {
 
 	public static Boolean enableReplyFrmServer = false;
 
+	public static Boolean enableHttpCallbacks = false;
+
 	public static Boolean enableAutoSync = false;
 
 	public static Boolean enableTaskCheck = false;
@@ -81,6 +83,7 @@ public class Prefs {
 		enableReply = settings.getBoolean("EnableReply", false);
 		enableReplyFrmServer = settings.getBoolean("EnableReplyFrmServer",
 				false);
+		enableHttpCallbacks = settings.getBoolean("EnableHttpCallbacks", true);
 		enableAutoSync = settings.getBoolean("AutoSync", false);
 		enableTaskCheck = settings.getBoolean("EnableTaskCheck", false);
 		autoTime = settings.getInt("AutoTime", autoTime);
