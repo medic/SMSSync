@@ -490,7 +490,9 @@ public class ProcessSms {
 	 * @param msg
 	 *            The {@link android.telephony.SmsMessage }
 	 */
-	public void delSmsFromInbox(String body, String address) {
+	public void delSmsFromInbox(String body, String address) {}
+
+	public void off_delSmsFromInbox(String body, String address) {
 		Logger.log(CLASS_TAG, "delSmsFromInbox(): Delete SMS message app inbox");
 		final long threadId = getThreadId(body, address);
 
