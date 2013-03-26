@@ -92,7 +92,7 @@ public class MessageSyncUtil extends Util {
 	 * @return boolean
 	 */
 	public boolean postToAWebService(String from, String message,
-			String sentTimestamp, String messageID, String secret) {
+			String sentTimestamp, String messageUuid, String secret) {
 
 		if (TextUtils.isEmpty(url)) { return false; }
 
@@ -103,7 +103,7 @@ public class MessageSyncUtil extends Util {
 			client.addParam("secret", secret);
 			client.addParam("from", from);
 			client.addParam("message", message);
-			client.addParam("message_id", messageID);
+			client.addParam("message_id", messageUuid);
 
 			if (formatDate(sentTimestamp) != null) {
 				client.addParam("sent_timestamp", sentTimestamp);
@@ -129,18 +129,16 @@ public class MessageSyncUtil extends Util {
 	 * @param int messageId - Sync by Id - 0 for no ID > 0 to for an id
 	 * @param String
 	 *            url The sync URL to push the message to.
-	 * @param String
-	 *            secret The secret key as set on the server.
 	 * 
 	 * @return int
 	 */
-	public int snycToWeb(int messageId, String secret) {
-		Log.d(CLASS_TAG, "syncToWeb(): push pending messages to the Sync URL");
+	public int syncToWeb(String messageUuid) {
+		log("syncToWeb(): push pending messages to the Sync URL");
 		MessagesModel model = new MessagesModel();
 		List<MessagesModel> listMessages = new ArrayList<MessagesModel>();
 		// check if it should sync by id
-		if (messageId > 0) {
-			model.loadById(messageId);
+		if (messageUuid != null && !TextUtils.isEmpty(messageUuid)) {
+			model.loadByUuid(messageUuid);
 			listMessages = model.listMessages;
 
 		} else {
@@ -158,13 +156,13 @@ public class MessageSyncUtil extends Util {
 			for (MessagesModel messages : listMessages) {
 				Log.d(CLASS_TAG, "processing messages");
 				if (processSms.routePendingMessages(messages.getMessageFrom(),
-							messages.getMessage(), messages.getMessageDate(),
-							String.valueOf(messages.getMessageId()))) {
+						messages.getMessage(), messages.getMessageDate(),
+						messages.getMessageUuid())) {
 
 					// / if it successfully pushes message, delete message
 					// from db
-					new MessagesModel().deleteMessagesById(messages
-							.getMessageId());
+					new MessagesModel().deleteMessagesByUuid(messages
+							.getMessageUuid());
 					deleted = 0;
 				} else {
 					deleted = 1;
@@ -199,7 +197,7 @@ public class MessageSyncUtil extends Util {
 	 * @param String
 	 *            response - the response from the server.
 	 */
-	private void sendResponseFromServer(String response) {
+	public void sendResponseFromServer(String response) {
 		Log.d(CLASS_TAG, "sendResponseFromServer(): " + " response:"
 				+ response);
 
@@ -263,17 +261,17 @@ public class MessageSyncUtil extends Util {
 		Log.d(CLASS_TAG,
 				"processMessages(): Process text messages as received from the user's phone");
 		List<MessagesModel> listMessages = new ArrayList<MessagesModel>();
-		int messageId = 0;
+		String messageUuid = "";
 		int status = 1;
 		MessagesModel messages = new MessagesModel();
 		listMessages.add(messages);
 
 		// check if messageId is actually initialized
-		if (smsMap.get("messagesId") != null) {
-			messageId = Integer.parseInt(smsMap.get("messagesId"));
+		if (smsMap.get("messagesUuid") != null) {
+			messageUuid = smsMap.get("messagesUuid");
 		}
 
-		messages.setMessageId(messageId);
+		messages.setMessageUuid(messageUuid);
 		messages.setMessageFrom(smsMap.get("messagesFrom"));
 		messages.setMessage(smsMap.get("messagesBody"));
 		messages.setMessageDate(smsMap.get("messagesDate"));
@@ -352,7 +350,7 @@ public class MessageSyncUtil extends Util {
 		// for now just enable callbacks when reply from server is enabled
 		Prefs.loadPreferences(context);
 
-		boolean success = Util.extractPayloadJSON(resp);
+		boolean success = Util.getJsonSuccessStatus(resp);
 		boolean callback = extractCallbackJSON(resp);
 
 		// if we have a success payload anywhere in chain we succeeded.

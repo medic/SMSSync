@@ -15,5 +15,5 @@ secure.properties
 ushahidi-key.keystore
 build.xml
 ant.properties
-gen
-bin
+local.properties
+secure.properties

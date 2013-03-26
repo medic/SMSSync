@@ -22,6 +22,11 @@ package org.addhen.smssync;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 import org.addhen.smssync.fragments.PendingMessages;
 import org.addhen.smssync.models.MessagesModel;
 import org.addhen.smssync.models.SyncUrlModel;
@@ -87,6 +92,10 @@ public class ProcessSms {
 
 	private Intent statusIntent;
 
+	private int PENDING = 0;
+
+	private int TASK = 1;
+
 	public ProcessSms(Context context) {
 		this.context = context;
 		smsMap = new HashMap<String, String>();
@@ -105,145 +114,138 @@ public class ProcessSms {
 	 * @param String
 	 *            messagesTimestamp The timestamp of the message
 	 * @param String
-	 *            messagesId The unique ID of the messages.
-	 * @param SmsMessages
-	 *            sms The SMS object as
+	 *            messagesId The universal unique ID of the messages.
 	 * 
 	 * @return boolean The status of the message routing.
 	 */
-	public boolean routeMessages(String messagesFrom, String messagesBody,
-			String messagesTimestamp, String messagesId) {
+	private boolean routeMessages(String messagesFrom, String messagesBody,
+			String messagesTimestamp, String messagesUuid) {
 
-		// load prefrences.
+		// load preferences
 		Prefs.loadPreferences(context);
 
-		boolean posted = true;
-		// is smssync service running
-		if (Prefs.enabled) {
+		boolean posted = false;
 
-			if (Util.isConnected(context)) {
+		// is SMSSync service running?
+		if (!Prefs.enabled || !Util.isConnected(context)) {
+			Util.showFailNotification(context, messagesBody,
+					context.getString(R.string.sending_failed));
+			return posted;
+		}
 
-				// send auto response from phone not server.
-				if (Prefs.enableReply) {
+		// send auto response from phone not server.
+		if (Prefs.enableReply) {
+			// send auto response as SMS to user's phone
+			sendSms(messagesFrom, Prefs.reply);
+		}
 
-					// send auto response as SMS to user's phone
-					sendSms(messagesFrom, Prefs.reply);
-				}
+		// get enabled Sync URLs
+		for (SyncUrlModel syncUrl : model.loadByStatus(ACTIVE_SYNC_URL)) {
 
-				// get enabled Sync URLs
-				for (SyncUrlModel syncUrl : model.loadByStatus(ACTIVE_SYNC_URL)) {
+			messageSyncUtil = new MessageSyncUtil(context,
+					syncUrl.getUrl());
 
-					messageSyncUtil = new MessageSyncUtil(context,
-							syncUrl.getUrl());
+			// process filter text (keyword or RegEx)
+			if (!TextUtils.isEmpty(syncUrl.getKeywords())) {
+				String filterText = syncUrl.getKeywords();
+				if (filterByKeywords(messagesBody, filterText)
+						|| filterByRegex(messagesBody, filterText)) {
+					posted = messageSyncUtil.postToAWebService(
+							messagesFrom, messagesBody,
+							messagesTimestamp, messagesUuid,
+							syncUrl.getSecret());
+					if (!posted) {
+						// Note: HTTP Error code or custom error message
+						// will have been shown already
+						Util.showFailNotification(
+								context,
+								messagesBody,
+								context.getString(R.string.sending_failed));
 
-					// process keyword
-					if (!TextUtils.isEmpty(syncUrl.getKeywords())) {
-						String keywords[] = syncUrl.getKeywords().split(",");
-						if (filterByKeywords(messagesBody, keywords)) {
-							posted = messageSyncUtil.postToAWebService(
-									messagesFrom, messagesBody,
-									messagesTimestamp, messagesId,
-									syncUrl.getSecret());
-							if (!posted) {
-								Util.showFailNotification(
-										context,
-										messagesBody,
-										context.getString(R.string.sending_failed));
+						// attempt to make a data connection to sync
+						// the failed messages.
+						Util.connectToDataNetwork(context);
+					} else {
 
-								// attempt to make a data connection to sync
-								// the failed messages.
-								Util.connectToDataNetwork(context);
-							} else {
-
-								postToSentBox(messagesFrom, messagesBody,
-										messagesId, messagesTimestamp);
-								Util.showFailNotification(
-										context,
-										messagesBody,
-										context.getString(R.string.sending_succeeded));
-							}
-
-						}
-
-					} else { // there is no keyword set up on a sync URL
-						posted = messageSyncUtil.postToAWebService(
-								messagesFrom, messagesBody, messagesTimestamp,
-								messagesId, syncUrl.getSecret());
-						if (!posted) {
-							Util.showFailNotification(context, messagesBody,
-									context.getString(R.string.sending_failed));
-
-							// attempt to make a data connection so to sync
-							// the failed messages.
-							Util.connectToDataNetwork(context);
-
-						} else {
-
-							postToSentBox(messagesFrom, messagesBody,
-									messagesId, messagesTimestamp);
-
-							Util.showFailNotification(
-									context,
-									messagesBody,
-									context.getString(R.string.sending_succeeded));
-						}
+						postToSentBox(messagesFrom, messagesBody,
+								messagesUuid, messagesTimestamp,
+								PENDING);
+						Util.showFailNotification(
+								context,
+								messagesBody,
+								context.getString(R.string.sending_succeeded));
 					}
+
 				}
 
-			} else { // no internet on the device.
-				Util.showFailNotification(context, messagesBody,
-						context.getString(R.string.sending_failed));
-				posted = false;
+			} else { // there is no filter text set up on a sync URL
+				posted = messageSyncUtil.postToAWebService(
+						messagesFrom, messagesBody, messagesTimestamp,
+						messagesUuid, syncUrl.getSecret());
+				Logger.log(CLASS_TAG, "routeMessages posted is " + posted);
+				if (!posted) {
+					Util.showFailNotification(context, messagesBody,
+							context.getString(R.string.sending_failed));
 
+					// attempt to make a data connection so to sync
+					// the failed messages.
+					Util.connectToDataNetwork(context);
+
+				} else {
+
+					postToSentBox(messagesFrom, messagesBody,
+							messagesUuid, messagesTimestamp, PENDING);
+
+					Util.showFailNotification(
+							context,
+							messagesBody,
+							context.getString(R.string.sending_succeeded));
+				}
 			}
 		}
+
 		return posted;
 	}
 
 	/**
-	 * Processes the incoming SMS to figure out how to exactly route the
+	 * Processes the incoming SMS to figure out how to exactly to route the
 	 * message. If it fails to be synced online, cache it and queue it up for
 	 * the scheduler to process it.
 	 * 
 	 * @param String
 	 *            messagesFrom The number that sent the SMS
 	 * @param String
-	 *            messagesBody The message body. This is the message sent ot the
+	 *            messagesBody The message body. This is the message sent to the
 	 *            phone.
-	 * @param String
-	 *            messagesTimestamp The timestamp of the message
-	 * @param String
-	 *            messagesId The unique ID of the messages.
 	 * @param SmsMessages
 	 *            sms The SMS object as
 	 */
-	public void routeSms(String messagesFrom, String messagesBody,
-			String messagesTimestamp, String messagesId, SmsMessage sms) {
-
-		if (routeMessages(messagesFrom, messagesBody, messagesTimestamp,
-				messagesId)) {
+	public void routeSms(String from, String body,
+			String timestamp, String uuid, SmsMessage sms) {
+		Logger.log(CLASS_TAG, "routeSms uuid: " + uuid);
+		if (routeMessages(from, body, timestamp, uuid)) {
 
 			// Delete messages from message app's inbox, only
-			// when smssync has that feature turned on
+			// when SMSSync has that feature turned on
 			if (Prefs.autoDelete) {
-				delSmsFromInbox(sms);
+				delSmsFromInbox(body, from);
 			}
 
 		} else {
-			postToPendingBox(messagesFrom, messagesBody, sms);
+			postToPendingBox(from, body, uuid, timestamp);
 		}
 
 	}
 
 	/**
-	 * Processes failed messages aka pending message to figure out how to
+	 * Processes failed messages AKA pending message to figure out how to
 	 * exactly route the message. If it fails to be synced online, cache it and
 	 * queue it up for the scheduler to process it.
 	 * 
 	 * @param String
 	 *            messagesFrom The number that sent the SMS
 	 * @param String
-	 *            messagesBody The message body. This is the message sent ot the
+	 *            messagesBody The message body. This is the message sent to the
 	 *            phone.
 	 * @param String
 	 *            messagesTimestamp The timestamp of the message
@@ -260,16 +262,17 @@ public class ProcessSms {
 	}
 
 	/**
-	 * Filter CSV strings for particular
+	 * Filter message string for particular keywords
 	 * 
 	 * @param message
-	 *            The CSV string to be filtered for the keywords
-	 * @param keywords
-	 *            An array that contains the keywords to be filtered
+	 *            The message to be tested against the keywords
+	 * @param filterText
+	 *            A CSV string listing keywords to match against message
 	 * 
 	 * @return boolean
 	 */
-	public boolean filterByKeywords(String message, String[] keywords) {
+	public boolean filterByKeywords(String message, String filterText) {
+		String[] keywords = filterText.split(",");
 		for (int i = 0; i < keywords.length; i++) {
 			if (message.toLowerCase()
 					.contains(keywords[i].toLowerCase().trim())) {
@@ -280,11 +283,33 @@ public class ProcessSms {
 	}
 
 	/**
+	 * Filter message string for RegEx match
+	 * 
+	 * @param message
+	 *            The message to be tested against the RegEx
+	 * @param filterText
+	 *            A string representing the regular expression to test against.
+	 * 
+	 * @return boolean
+	 */
+	public boolean filterByRegex(String message, String filterText) {
+		Pattern pattern = null;
+		try {
+			pattern = Pattern.compile(filterText, Pattern.CASE_INSENSITIVE);
+		} catch (PatternSyntaxException e) {
+			// invalid RegEx
+			return false;
+		}
+		Matcher matcher = pattern.matcher(message);
+		return (matcher.find());
+	}
+
+	/**
 	 * Import messages from the messages app's table and puts them in SMSSync's
 	 * outbox table. This will allow messages the imported messages to be sync'd
 	 * to the configured Sync URL.
 	 * 
-	 * @return int - 0 for success, 1 for failure.
+	 * @return int 0 for success, 1 for failure.
 	 */
 	public int importMessages() {
 		Logger.log(CLASS_TAG,
@@ -299,7 +324,7 @@ public class ProcessSms {
 				null, "date DESC");
 
 		List<MessagesModel> listMessages = new ArrayList<MessagesModel>();
-
+		MessagesModel msgs = new MessagesModel();
 		if (c.getCount() > 0 && c != null) {
 			if (c.moveToFirst()) {
 
@@ -314,15 +339,13 @@ public class ProcessSms {
 					messages.setMessageFrom(c.getString(c
 							.getColumnIndex("address")));
 					messages.setMessage(c.getString(c.getColumnIndex("body")));
-					messages.setMessageId(Integer.valueOf(c.getString(c
-							.getColumnIndex("_id"))));
-
-					messages.listMessages = listMessages;
-					messages.save();
+					messages.setMessageUuid(getUuid());
 
 				} while (c.moveToNext());
 			}
 			c.close();
+			msgs.listMessages = listMessages;
+			msgs.save();
 			return 0;
 
 		} else {
@@ -372,38 +395,36 @@ public class ProcessSms {
 	}
 
 	/**
-	 * Tries to locate the message id or thread id given the address (phone
-	 * number or email) of the message sender.
+	 * Tries to locate the thread id given the address (phone number or email)
+	 * of the message sender.
 	 * 
-	 * @param SmsMessage
-	 *            msg - The SMS object to get the address of the message from.
-	 * @param idType
-	 *            The type it use to fetch the ID of the message. Either id type
-	 *            or thread type
+	 * @param String
+	 *            body
+	 * @param String
+	 *            address
 	 * 
-	 * @return the message id
+	 * @return the thread id
 	 */
-	public long getId(SmsMessage msg, String idType) {
-		Logger.log(CLASS_TAG,
-				"getId(): Locate message id or thread id: idType:" + idType);
+	public long getThreadId(String body, String address) {
+		Logger.log(CLASS_TAG, "getId(): thread id");
 		Uri uriSms = Uri.parse(SMS_CONTENT_INBOX);
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("address='" + msg.getOriginatingAddress() + "' AND ");
-		sb.append("body=" + DatabaseUtils.sqlEscapeString(msg.getMessageBody()));
-		Cursor c = context.getContentResolver().query(uriSms, null,
-				sb.toString(), null, null);
+		sb.append("address=" + DatabaseUtils.sqlEscapeString(address) + " AND ");
+		sb.append("body=" + DatabaseUtils.sqlEscapeString(body));
+
+		Cursor c = context.getContentResolver().query(uriSms, null, null, null,
+				"date DESC ");
 
 		if (c.getCount() > 0 && c != null) {
-			c.moveToFirst();
-			if (idType.equals("id")) {
-				return c.getLong(c.getColumnIndex("_id"));
 
-			} else if (idType.equals("thread")) {
-				return c.getLong(c.getColumnIndex("thread_id"));
-			}
+			c.moveToFirst();
+			long threadId = c.getLong(c.getColumnIndex("thread_id"));
 			c.close();
+
+			return threadId;
 		}
+
 		return 0;
 	}
 	/*
@@ -418,6 +439,10 @@ public class ProcessSms {
 		return availableConnections.get(nextIndex);
 	}
 
+	public String getUuid() {
+		return UUID.randomUUID().toString();
+	}
+
 	/**
 	 * Sends SMS to a number.
 	 * 
@@ -427,39 +452,33 @@ public class ProcessSms {
 	 *            msg - The message to be sent.
 	 */
 	public void sendSms(String sendTo, String msg) {
-		MessengerConnection connectionToUse = getCurrentMessengerConnection();
-		if(connectionToUse == null){
-			ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
-			ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
-			Logger.log(CLASS_TAG, "sendSms(): Sends SMS to a number: sendTo: "
-					+ sendTo + " message: " + msg);
+		ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
+		ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
+		Logger.log(CLASS_TAG, "sendSms(): Sends SMS to a number: sendTo: "
+				+ sendTo + " message: " + msg);
 
-			SmsManager sms = SmsManager.getDefault();
-			ArrayList<String> parts = sms.divideMessage(msg);
-			for (int i = 0; i < parts.size(); i++) {
-				PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
-						new Intent(ServicesConstants.SENT), 0);
+		SmsManager sms = SmsManager.getDefault();
+		ArrayList<String> parts = sms.divideMessage(msg);
 
-				PendingIntent deliveryIntent = PendingIntent.getBroadcast(context,
-						0, new Intent(ServicesConstants.DELIVERED), 0);
-				sentIntents.add(sentIntent);
+		for (int i = 0; i < parts.size(); i++) {
+			PendingIntent sentIntent = PendingIntent.getBroadcast(context, 0,
+					new Intent(ServicesConstants.SENT), 0);
 
-				deliveryIntents.add(deliveryIntent);
-			}
-			if (PhoneNumberUtils.isGlobalPhoneNumber(sendTo))
-				sms.sendMultipartTextMessage(sendTo, null, parts, sentIntents,
-						deliveryIntents);
-		} else {
-	        Message message = Message.obtain(null, 1, 0, 0);
-	        try {
-				Bundle data = new Bundle();
-				data.putString("sendTo", sendTo);
-				data.putString("msg", msg);
-				message.setData(data);
-				connectionToUse.messenger.send(message);
-	        } catch (RemoteException e) {
-	            e.printStackTrace();
-	        }
+			PendingIntent deliveryIntent = PendingIntent.getBroadcast(context,
+					0, new Intent(ServicesConstants.DELIVERED), 0);
+			sentIntents.add(sentIntent);
+
+			deliveryIntents.add(deliveryIntent);
+		}
+
+		if (PhoneNumberUtils.isGlobalPhoneNumber(sendTo)) {
+			sms.sendMultipartTextMessage(sendTo, null, parts, sentIntents,
+					deliveryIntents);
+
+			// Get current Time Millis
+			final Long timeMills = System.currentTimeMillis() / 1000;
+			// Log to sent table
+			postToSentBox(sendTo, msg, getUuid(), timeMills.toString(), TASK);
 		}
 	}
 
@@ -471,9 +490,9 @@ public class ProcessSms {
 	 * @param msg
 	 *            The {@link android.telephony.SmsMessage }
 	 */
-	public void delSmsFromInbox(SmsMessage msg) {
+	public void delSmsFromInbox(String body, String address) {
 		Logger.log(CLASS_TAG, "delSmsFromInbox(): Delete SMS message app inbox");
-		final long threadId = getId(msg, "thread");
+		final long threadId = getThreadId(body, address);
 
 		if (threadId >= 0) {
 			context.getContentResolver().delete(
@@ -486,14 +505,16 @@ public class ProcessSms {
 	 * 
 	 * @return void
 	 */
-	public void postToSentBox(String messagesFrom, String messagesBody,
-			String messageId, String messageDate) {
-		Logger.log(CLASS_TAG, "postToOutbox(): post failed messages to outbox");
+	private void postToSentBox(String messagesFrom, String messagesBody,
+			String messageUuid, String messageDate, int messageType) {
+		Logger.log(CLASS_TAG, "postToSentBox(): post message to sentbox");
 
 		SentMessagesUtil.smsMap.put("messagesFrom", messagesFrom);
 		SentMessagesUtil.smsMap.put("messagesBody", messagesBody);
 		SentMessagesUtil.smsMap.put("messagesDate", messageDate);
-		SentMessagesUtil.smsMap.put("messagesId", messageId);
+		SentMessagesUtil.smsMap.put("messagesUuid", messageUuid);
+		SentMessagesUtil.smsMap
+				.put("messagesType", String.valueOf(messageType));
 
 		int status = SentMessagesUtil.processSentMessages(context);
 		statusIntent.putExtra("sentstatus", status);
@@ -506,18 +527,19 @@ public class ProcessSms {
 	 * 
 	 * @return void
 	 */
-	private void postToPendingBox(final String messagesFrom,
-			final String messagesBody, final SmsMessage sms) {
-		Logger.log(CLASS_TAG, "postToOutbox(): post failed messages to outbox");
+	private void postToPendingBox(String from, String body,
+			String uuid, String date) {
+	//private void postToPendingBox(final String messagesFrom,
+//			final String messagesBody, final SmsMessage sms) {
+		Logger.log(CLASS_TAG, "postToPendingBox(): post message to pendingbox");
 
 		// Get message id.
-		String messageId = String.valueOf(getId(sms, "id"));
+		//String messageUuid = getUuid();
 
-		String messageDate = String.valueOf(sms.getTimestampMillis());
-		Util.smsMap.put("messagesFrom", messagesFrom);
-		Util.smsMap.put("messagesBody", messagesBody);
-		Util.smsMap.put("messagesDate", messageDate);
-		Util.smsMap.put("messagesId", messageId);
+		Util.smsMap.put("messagesFrom", from);
+		Util.smsMap.put("messagesBody", body);
+		Util.smsMap.put("messagesDate", date);
+		Util.smsMap.put("messagesUuid", uuid);
 		new PendingMessages().showMessages();
 
 		int status = MessageSyncUtil.processMessages();

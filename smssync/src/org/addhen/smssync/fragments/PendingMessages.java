@@ -31,6 +31,7 @@ import org.addhen.smssync.services.SyncPendingMessagesService;
 import org.addhen.smssync.tasks.ProgressTask;
 import org.addhen.smssync.util.ServicesConstants;
 import org.addhen.smssync.util.Util;
+import org.addhen.smssync.util.Logger;
 import org.addhen.smssync.views.PendingMessagesView;
 
 import android.app.Activity;
@@ -59,7 +60,7 @@ public class PendingMessages
 
 	private MessagesModel model;
 
-	private int messageId = 0;
+	private String messageUuid;
 
 	private MenuItem refresh;
 
@@ -67,16 +68,20 @@ public class PendingMessages
 
 	private static final String STATE_CHECKED = "org.addhen.smssync.fragments.STATE_CHECKED";
 
+	private static String CLASS_TAG = PendingMessages.class.getSimpleName();
+
 	public PendingMessages() {
 		super(PendingMessagesView.class, PendingMessagesAdapter.class,
 				R.layout.list_messages, R.menu.pending_messages_menu,
 				android.R.id.list);
+		log("PendingMessages()");
 		mHandler = new Handler();
 		model = new MessagesModel();
 	}
 
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
+		log("onActivityCreated()");
 		super.onActivityCreated(savedInstanceState);
 
 		setHasOptionsMenu(true);
@@ -106,12 +111,14 @@ public class PendingMessages
 
 	@Override
 	public void onSaveInstanceState(Bundle state) {
+		log("onSaveInstanceState()");
 		super.onSaveInstanceState(state);
 		state.putInt(STATE_CHECKED, listView.getCheckedItemPosition());
 	}
 
 	@Override
 	public void onResume() {
+		log("onResume()");
 		super.onResume();
 		getActivity().registerReceiver(broadcastReceiver,
 				new IntentFilter(ServicesConstants.AUTO_SYNC_ACTION));
@@ -127,11 +134,13 @@ public class PendingMessages
 
 	@Override
 	public void onStart() {
+		log("onStart()");
 		super.onStart();
 	}
 
 	@Override
 	public void onPause() {
+		log("onPause()");
 		super.onPause();
 		getActivity().unregisterReceiver(broadcastReceiver);
 		getActivity().unregisterReceiver(failedReceiver);
@@ -143,11 +152,13 @@ public class PendingMessages
 
 	@Override
 	public void onDestroy() {
+		log("onDestroy()");
 		super.onDestroy();
 	}
 
 	public boolean performAction(MenuItem item, int position) {
-		messageId = adapter.getItem(position).getMessageId();
+		log("performAction()");
+		messageUuid = adapter.getItem(position).getMessageUuid();
 		if (item.getItemId() == R.id.context_delete) {
 
 			performDeleteById();
@@ -158,24 +169,23 @@ public class PendingMessages
 			refresh = item;
 			refreshState = true;
 			updateRefreshStatus();
-			syncMessages(messageId);
+			syncMessages(messageUuid);
 		}
 		return (false);
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
+		log("onOptionsItemSelected()");
 		Intent intent;
 		if (item.getItemId() == R.id.sync) {
 			refresh = item;
 			refreshState = true;
 			updateRefreshStatus();
-			syncMessages(0);
+			syncMessages("");
 			return (true);
 		} else if (item.getItemId() == R.id.import_sms) {
-			ImportMessagesTask importMessagesTask = new ImportMessagesTask(
-					getActivity());
-			importMessagesTask.execute();
+			importAllSms();
 		} else if (item.getItemId() == R.id.delete) {
 			performDeleteAll();
 		} else if (item.getItemId() == R.id.settings) {
@@ -186,6 +196,7 @@ public class PendingMessages
 	}
 
 	private void updateRefreshStatus() {
+		log("updateRefreshStatus()");
 		if (refresh != null) {
 			if (refreshState)
 				refresh.setActionView(R.layout.indeterminate_progress_action);
@@ -199,6 +210,7 @@ public class PendingMessages
 	 * Delete all messages
 	 */
 	private void performDeleteAll() {
+		log("perofrmDeleteAll()");
 		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 		builder.setMessage(getString(R.string.confirm_message))
 				.setCancelable(false)
@@ -221,9 +233,37 @@ public class PendingMessages
 	}
 
 	/**
+	 * Import all messages from the Android messaging inbox
+	 */
+	private void importAllSms() {
+		log("importAllSms()");
+		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+		builder.setMessage(getString(R.string.confirm_sms_import))
+				.setCancelable(false)
+				.setNegativeButton(getString(R.string.cancel),
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								dialog.cancel();
+							}
+						})
+				.setPositiveButton(getString(R.string.ok),
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								ImportMessagesTask importMessagesTask = new ImportMessagesTask(
+										getActivity());
+								importMessagesTask.execute();
+
+							}
+						});
+		AlertDialog alert = builder.create();
+		alert.show();
+	}
+
+	/**
 	 * Delete message by it's id
 	 */
 	public void performDeleteById() {
+		log("performDeleteById()");
 		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 		builder.setMessage(getString(R.string.confirm_message))
 				.setCancelable(false)
@@ -248,6 +288,7 @@ public class PendingMessages
 	// Display pending messages.
 	final Runnable mUpdateListView = new Runnable() {
 		public void run() {
+			log("mUpdateListView()");
 			showMessages();
 		}
 	};
@@ -255,20 +296,16 @@ public class PendingMessages
 	// Synchronize all pending messages.
 	final Runnable mSyncMessages = new Runnable() {
 		public void run() {
+			log("mSyncMessages()");
 			Prefs.loadPreferences(getActivity());
 			if (Prefs.enabled) {
 				int result = 0;
 				try {
 					if (result == 0) {
-
 						toastLong(R.string.sending_succeeded);
 					} else if (result == 1) {
 						toastLong(R.string.sending_failed);
-					}/*
-					 * else if (result == 2) {
-					 * toastLong(R.string.no_messages_to_sync); }
-					 */
-
+					}
 				} catch (Exception e) {
 					return;
 				}
@@ -284,6 +321,7 @@ public class PendingMessages
 	 */
 	final Runnable mSyncMessagesById = new Runnable() {
 		public void run() {
+			log("mSyncMessagesById()");
 			Prefs.loadPreferences(getActivity());
 			if (Prefs.enabled) {
 				int result = 0;
@@ -293,10 +331,7 @@ public class PendingMessages
 						showMessages();
 					} else if (result == 1) {
 						toastLong(R.string.sync_failed);
-					} /*
-					 * else if (result == 2) {
-					 * toastLong(R.string.no_messages_to_sync); }
-					 */
+					}
 				} catch (Exception e) {
 					return;
 				}
@@ -312,6 +347,7 @@ public class PendingMessages
 	 */
 	final Runnable mDeleteAllMessages = new Runnable() {
 		public void run() {
+			log("mDeleteAllMessages()");
 			getActivity().setProgressBarIndeterminateVisibility(true);
 			boolean result = false;
 
@@ -348,6 +384,7 @@ public class PendingMessages
 	 */
 	final Runnable mDeleteMessagesById = new Runnable() {
 		public void run() {
+			log("mDeleteMessagesById()");
 			getActivity().setProgressBarIndeterminateVisibility(true);
 			boolean result = false;
 
@@ -356,7 +393,7 @@ public class PendingMessages
 			if (adapter.getCount() == 0) {
 				deleted = 1;
 			} else {
-				result = model.deleteMessagesById(messageId);
+				result = model.deleteMessagesByUuid(messageUuid);
 			}
 
 			try {
@@ -385,6 +422,7 @@ public class PendingMessages
 	 * @return void
 	 */
 	public void showMessages() {
+		log("showMessages()");
 		if (adapter != null) {
 			adapter.refresh();
 		}
@@ -398,11 +436,12 @@ public class PendingMessages
 	/**
 	 * Get messages from the db and push them to the configured callback URL
 	 * 
-	 * @param int messagesId
+	 * @param String messagesUuid
 	 * @return int
 	 */
 
-	public void syncMessages(int messagesId) {
+	public void syncMessages(String messagesUuid) {
+		log("syncMessages messagesUuid: " + messagesUuid);
 		if (adapter != null && adapter.getCount() == 0) {
 			statusIntent.putExtra("syncstatus", 2);
 			getActivity().sendBroadcast(statusIntent);
@@ -410,7 +449,7 @@ public class PendingMessages
 			syncPendingMessagesServiceIntent = new Intent(getActivity(),
 					SyncPendingMessagesService.class);
 			syncPendingMessagesServiceIntent.putExtra(
-					ServicesConstants.MESSEAGE_ID, messagesId);
+					ServicesConstants.MESSAGE_UUID, messagesUuid);
 			getActivity().startService(syncPendingMessagesServiceIntent);
 		}
 	}
@@ -455,9 +494,8 @@ public class PendingMessages
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			if (intent != null) {
-
 				int status = intent.getIntExtra("syncstatus", 3);
-				log("Status: " + status);
+				log("broadcastReceiver onReceive status: " + status);
 				if (status == 0) {
 					toastLong(R.string.sending_succeeded);
 				} else if (status == 1) {
@@ -485,7 +523,7 @@ public class PendingMessages
 		public void onReceive(Context context, Intent intent) {
 			if (intent != null) {
 				int status = intent.getIntExtra("failed", 2);
-
+				log("failedReceiver onReceive status: " + status);
 				if (status == 0) {
 					mHandler.post(mUpdateListView);
 				}
@@ -497,7 +535,9 @@ public class PendingMessages
 	private BroadcastReceiver smsSentReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			switch (getResultCode()) {
+			int result = getResultCode();
+			log("smsSentReceiver onReceive result: " + result);
+			switch (result) {
 			case Activity.RESULT_OK:
 				toastLong(R.string.sms_status_success);
 				break;
@@ -520,8 +560,11 @@ public class PendingMessages
 	// when sms has been delivered
 	private BroadcastReceiver smsDeliveredReceiver = new BroadcastReceiver() {
 
-		public void onReceive(Context arg0, Intent arg1) {
-			switch (getResultCode()) {
+		public void onReceive(Context context, Intent intent) {
+			int result = getResultCode();
+			log("smsDeliveredReceiver onReceive result: " + result);
+			switch (result) {
+
 			case Activity.RESULT_OK:
 				toastLong(R.string.sms_delivered);
 				break;
