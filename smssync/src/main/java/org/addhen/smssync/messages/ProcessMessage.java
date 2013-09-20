@@ -6,16 +6,19 @@ import org.addhen.smssync.models.Filter;
 import org.addhen.smssync.models.Message;
 import org.addhen.smssync.models.SyncUrl;
 import org.addhen.smssync.net.MessageSyncHttpClient;
+import org.addhen.smssync.net.MainHttpClient;;
 import org.addhen.smssync.util.Logger;
 import org.addhen.smssync.util.Util;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
+ 
 import android.content.Context;
 import android.text.TextUtils;
 
 import java.net.URLEncoder;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.addhen.smssync.messages.ProcessSms.PENDING;
@@ -25,12 +28,9 @@ import static org.addhen.smssync.messages.ProcessSms.PENDING;
  */
 public class ProcessMessage {
 
-    private static final String TAG = ProcessMessage.class
-            .getSimpleName();
+    private static final String CLASS_TAG = ProcessMessage.class.getSimpleName();
 
     private static final int ACTIVE_SYNC_URL = 1;
-
-    private static JSONObject jsonObject;
 
     private static JSONArray jsonArray;
 
@@ -39,6 +39,10 @@ public class ProcessMessage {
     private ProcessSms processSms;
 
     private String errorMessage;
+
+    private String urlSecret;
+
+	private int callbackCount;
 
     public ProcessMessage(Context context) {
         this.context = context;
@@ -49,7 +53,7 @@ public class ProcessMessage {
      * Save SMS that failed to be sent to the sync Url to the the db.
      */
     public boolean saveMessage(Message message) {
-        Logger.log(TAG,
+        Logger.log(CLASS_TAG,
                 "saveMessage(): save text messages as received from the user's phone");
         return message.save();
     }
@@ -62,7 +66,7 @@ public class ProcessMessage {
      * @return boolean
      */
     public boolean syncReceivedSms(Message message, SyncUrl syncUrl) {
-        Logger.log(TAG, "postToAWebService(): Post received SMS to configured URL:" +
+        Logger.log(CLASS_TAG, "postToAWebService(): Post received SMS to configured URL:" +
                 message.toString() + " SyncUrlFragment: " + syncUrl.toString());
         MessageSyncHttpClient msgSyncHttpClient = new MessageSyncHttpClient(context, syncUrl);
         final boolean posted = msgSyncHttpClient
@@ -82,7 +86,7 @@ public class ProcessMessage {
      * @param uuid The message uuid
      */
     public boolean syncPendingMessages(String uuid) {
-        Logger.log(TAG, "syncPendingMessages: push pending messages to the Sync URL" + uuid);
+        Logger.log(CLASS_TAG, "syncPendingMessages: push pending messages to the Sync URL" + uuid);
         Message messageModel = new Message();
         List<Message> listMessages;
         // check if it should sync by id
@@ -115,7 +119,7 @@ public class ProcessMessage {
      * @param response The JSON string response from the server.
      */
     public void smsServerResponse(String response) {
-        Logger.log(TAG, "performResponseFromServer(): " + " response:"
+        Logger.log(CLASS_TAG, "performResponseFromServer(): " + " response:"
                 + response);
         if (!Prefs.enableReplyFrmServer) {
             return;
@@ -125,7 +129,7 @@ public class ProcessMessage {
 
             try {
 
-                jsonObject = new JSONObject(response);
+                JSONObject jsonObject = new JSONObject(response);
                 JSONObject payloadObject = jsonObject.getJSONObject("payload");
 
                 if (payloadObject != null) {
@@ -144,87 +148,93 @@ public class ProcessMessage {
 
                 }
             } catch (JSONException e) {
-                new Util().log(TAG, "Error: " + e.getMessage());
+                new Util().log(CLASS_TAG, "Error: " + e.getMessage());
             }
         }
     }
 
     public void performTask(SyncUrl syncUrl) {
-        Logger.log(TAG, "performTask(): perform a task");
+        Logger.log(CLASS_TAG, "performTask(): perform a task");
+
         // load Prefs
         Prefs.loadPreferences(context);
 
         // validate configured url
         int status = Util.validateCallbackUrl(syncUrl.getUrl());
+
+		Logger.log(CLASS_TAG, "status "+ status);
+		Logger.log(CLASS_TAG, "syncURL "+syncUrl.getUrl());
         if (status == 1) {
             setErrorMessage(context.getString(R.string.no_configured_url));
-        } else if (status == 2) {
+			return;
+		}
+        if (status == 2) {
             setErrorMessage(context.getString(R.string.invalid_url));
-        } else if (status == 3) {
+			return;
+		}
+        if (status == 3) {
             setErrorMessage(context.getString(R.string.no_connection));
-        } else {
-
-            StringBuilder uriBuilder = new StringBuilder(syncUrl.getUrl());
-            final String urlSecret = syncUrl.getSecret();
-            uriBuilder.append("?task=send");
-
-            if (!TextUtils.isEmpty(urlSecret)) {
-                String urlSecretEncoded = urlSecret;
-                uriBuilder.append("&secret=");
-                try {
-                    urlSecretEncoded = URLEncoder.encode(urlSecret, "UTF-8");
-                } catch (java.io.UnsupportedEncodingException e) {
-                    Logger.log(TAG, e.getMessage());
-                }
-                uriBuilder.append(urlSecretEncoded);
-                syncUrl.setUrl(uriBuilder.toString());
-            }
-            MessageSyncHttpClient msgSyncHttpClient = new MessageSyncHttpClient(context, syncUrl);
-            String response = msgSyncHttpClient.getFromWebService();
-            Logger.log(TAG, "TaskCheckResponse: " + response);
-            if (response != null && !TextUtils.isEmpty(response)) {
-
-                try {
-
-                    jsonObject = new JSONObject(response);
-                    JSONObject payloadObject = jsonObject
-                            .getJSONObject("payload");
-
-                    if (payloadObject != null) {
-                        String task = payloadObject.getString("task");
-                        boolean secretOk = TextUtils.isEmpty(urlSecret) ||
-                                urlSecret.equals(payloadObject.getString("secret"));
-                        if (secretOk && task.equals("send")) {
-
-                            jsonArray = payloadObject.getJSONArray("messages");
-
-                            for (int index = 0; index < jsonArray.length(); ++index) {
-                                jsonObject = jsonArray.getJSONObject(index);
-
-                                processSms.sendSms(jsonObject.getString("to"),
-                                        jsonObject.getString("message"));
-                            }
-
-                        } else {
-                            Logger.log(TAG, context.getString(R.string.no_task));
-                            setErrorMessage(context.getString(R.string.no_task));
-                        }
-
-                    } else { // 'payload' data may not be present in JSON
-                        // response
-                        Logger.log(TAG, context.getString(R.string.no_task));
-                        setErrorMessage(context.getString(R.string.no_task));
-                    }
-
-                } catch (JSONException e) {
-                    Logger.log(TAG, "Error: " + e.getMessage());
-                    setErrorMessage(e.getMessage());
-                }
-            }
+			return;
         }
 
 
-    }
+		StringBuilder uriBuilder = new StringBuilder(syncUrl.getUrl());
+		urlSecret = syncUrl.getSecret();
+		uriBuilder.append("?task=send");
+
+        Logger.log(CLASS_TAG, "line 183");
+
+		if (!TextUtils.isEmpty(urlSecret)) {
+			Logger.log(CLASS_TAG, "line 189");
+			String urlSecretEncoded = urlSecret;
+			uriBuilder.append("&secret=");
+			try {
+				urlSecretEncoded = URLEncoder.encode(urlSecret, "UTF-8");
+			} catch (java.io.UnsupportedEncodingException e) {
+				Logger.log(CLASS_TAG, e.getMessage());
+			}
+			uriBuilder.append(urlSecretEncoded);
+			syncUrl.setUrl(uriBuilder.toString());
+		}
+
+			Logger.log(CLASS_TAG, "line 201");
+		MessageSyncHttpClient client = new MessageSyncHttpClient(context, syncUrl);
+		String response = client.getFromWebService();
+		Logger.log(CLASS_TAG, "TaskCheckResponse: " + response);
+
+		// nothing to do if we have no response 
+		if (response == null || TextUtils.isEmpty(response)) {
+			Logger.log(CLASS_TAG, "line 208");
+			return;
+		}
+
+		Logger.log(CLASS_TAG, "line 212");
+		// process callback and payload properties
+		JSONObject json = null;
+		JSONObject payload = null;
+		JSONObject callback = null;
+
+		try {
+			json = new JSONObject(response);
+			payload = json.getJSONObject("payload");
+			callback = json.getJSONObject("callback");
+		} catch (JSONException e) {
+			Logger.log(CLASS_TAG, e.getMessage());
+		}
+
+		try {
+			processPayload(payload);
+		} catch (Exception e) {
+			Logger.log(CLASS_TAG, e.getMessage());
+		}
+
+		try {
+			processCallback(callback);
+		} catch (Exception e) {
+			Logger.log(CLASS_TAG, e.getMessage());
+		}
+
+	}
 
     /**
      * Processes the incoming SMS to figure out how to exactly to route the message. If it fails to
@@ -234,7 +244,7 @@ public class ProcessMessage {
      * @return boolean
      */
     public boolean routeSms(Message message) {
-        Logger.log(TAG, "routeSms uuid: " + message.toString());
+        Logger.log(CLASS_TAG, "routeSms uuid: " + message.toString());
 
         // is SMSSync service running?
         if (Prefs.enabled) {
@@ -284,7 +294,7 @@ public class ProcessMessage {
             String filterText = syncUrl.getKeywords();
             if (processSms.filterByKeywords(message.getBody(), filterText)
                     || processSms.filterByRegex(message.getBody(), filterText)) {
-                Logger.log(TAG, syncUrl.getUrl());
+                Logger.log(CLASS_TAG, syncUrl.getUrl());
 
                 posted = syncReceivedSms(message, syncUrl);
                 if (!posted) {
@@ -375,5 +385,234 @@ public class ProcessMessage {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+		Logger.log(CLASS_TAG, errorMessage);
     }
+
+
+	/**
+	 * Send messages in response payload
+	 */
+	private void processPayload(JSONObject payload) throws Exception {
+
+		if (payload == null) {
+			return;
+		}
+
+		try {
+			String task = payload.getString("task");
+			boolean secretOk = TextUtils.isEmpty(urlSecret) ||
+				urlSecret.equals(payload.getString("secret"));
+			if (secretOk && task.equals("send")) {
+				jsonArray = payload.getJSONArray("messages");
+				JSONObject jsonObject = null;
+				for (int index = 0; index < jsonArray.length(); ++index) {
+					jsonObject = jsonArray.getJSONObject(index);
+					processSms.sendSms(
+						jsonObject.getString("to"),
+						jsonObject.getString("message")
+					);
+				}
+			} else {
+				setErrorMessage(context.getString(R.string.no_task));
+			}
+
+		} catch (JSONException e) {
+			setErrorMessage(e.getMessage());
+		}
+	}
+
+
+	/**
+	 * Make additional http requests based on response.
+	 */
+	private void processCallback(JSONObject cb) throws Exception {
+        // load Prefs
+        Prefs.loadPreferences(context);
+
+		if (cb == null) {
+			return;
+		}
+
+		try {
+			String url = getCallbackURL(cb);
+			String method = getCallbackMethod(cb);
+			JSONObject headers = getCallbackHeaders(cb);
+
+            MainHttpClient client = new MainHttpClient(url, context);
+
+			// add headers
+            Iterator<String> iter = headers.keys();
+            while (iter.hasNext()) {
+                String k = iter.next();
+                client.addHeader(k, headers.getString(k));
+            }
+
+            if (method.equals("POST")) {
+                client.setEntity(getCallbackData(cb));
+                client.executePost();
+            } else if (method.equals("PUT")) {
+                client.setEntity(getCallbackData(cb));
+                client.executePut();
+            } else {
+                client.executeGet();
+            }
+
+			processResponse(client.getResponse(), client.getResponseCode());
+
+		} catch (Exception e) {
+			throw e;
+		}
+	}
+
+	/**
+	 * Does a HTTP request based on callback json configuration data
+	 */
+	private void processResponse(String response, int statusCode) throws Exception {
+
+		if (callbackCount > 10) {
+			return;
+		} else {
+			callbackCount++;
+		}
+
+		// any req in the chain fails, return
+		if (statusCode != 200 && statusCode != 201) {
+			return;
+		}
+
+		// load Prefs
+		// for now just enable callbacks when reply from server is enabled
+		Prefs.loadPreferences(context);
+
+		if (!Prefs.enableReplyFrmServer) {
+			return;
+		}
+
+		// continue processing payload and callback properties
+		JSONObject json = null;
+		JSONObject payload = null;
+		JSONObject callback = null;
+
+		try {
+			json = new JSONObject(response);
+			payload = json.getJSONObject("payload");
+			callback = json.getJSONObject("callback");
+		} catch (JSONException e) {
+			// throw everything other than json parse failed
+		}
+
+		try {
+			processPayload(payload);
+		} catch (Exception e) {
+			Logger.log(CLASS_TAG, e.getMessage());
+		}
+
+		try {
+			processCallback(callback);
+		} catch (Exception e) {
+			Logger.log(CLASS_TAG, e.getMessage());
+		}
+
+	}
+
+
+	/**
+	 * Extract callback JSON data
+	 * 
+	 * @apram json_data - The json data to be formatted.
+	 * @return boolean
+	 */
+	private boolean extractCallbackJSON(String json_data) {
+		Logger.log(CLASS_TAG, "extractCallbackJSON(): Extracting callback JSON data" + json_data);
+		try {
+			JSONObject test = new JSONObject(json_data).getJSONObject("callback");
+			return true;
+		} catch (JSONException e) {
+			setErrorMessage(e.getMessage());
+			return false;
+		}
+	}
+
+
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return String url - The URL from the callback response
+	 */
+	private String getCallbackURL(JSONObject callback) {
+		Logger.log(CLASS_TAG, "getCallbackURL:");
+		try {
+			JSONObject options = callback.getJSONObject("options");
+			String host = options.getString("host");
+			String port = options.getString("port");
+			String path = options.getString("path");
+			String url = "";
+			if (port == "null" || TextUtils.isEmpty(port)) {
+				url = "http://" + host + path;
+			} else if (port == "443") {
+				url = "https://" + host + path;
+			} else {
+				url = "http://" + host + ":" + port + path;
+			}
+			Logger.log(CLASS_TAG, "callback URL is: " + url);
+			return url;
+		} catch (JSONException e) {
+			setErrorMessage(e.getMessage());
+		}
+		return null;
+	};
+
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return String method - The method string from the callback options
+	 */
+	private String getCallbackMethod(JSONObject callback) {
+		Logger.log(CLASS_TAG, "getCallbackMethod()");
+		try {
+			JSONObject options = callback.getJSONObject("options");
+			Logger.log(CLASS_TAG, "getCallbackMethod: options" + options);
+			return options.getString("method");
+		} catch (JSONException e) {
+			setErrorMessage(e.getMessage());
+		}
+		return null;
+	};
+
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback object
+	 *
+	 * @return String data - The string value of the data property from the
+	 * callback object.  The data attribute can be a string or valid JSON
+	 * object.  
+	 *
+	 */
+	private String getCallbackData(JSONObject callback) {
+		Logger.log(CLASS_TAG, "getCallbackData()");
+		try {
+			return callback.getJSONObject("data").toString();
+		} catch (JSONException e) {
+			try {
+				return callback.getString("data");
+			} catch (JSONException f) {
+				setErrorMessage(f.getMessage());
+			}
+		}
+		return null;
+	};
+
+	/**
+	 * @param JSONObject callback - JSONObject representing the callback 
+	 * @return JSONObject headers - The headers object of the callback json
+	 */
+	private JSONObject getCallbackHeaders(JSONObject callback) {
+		Logger.log(CLASS_TAG, "getCallbackHeaders()");
+		try {
+			JSONObject options = callback.getJSONObject("options");
+			JSONObject headers = options.getJSONObject("headers");
+			return headers;
+		} catch (JSONException e) {
+			setErrorMessage(e.getMessage());
+		}
+		return null;
+	};
+
 }

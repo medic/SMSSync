@@ -85,7 +85,7 @@ public class MessageSyncHttpClient extends MainHttpClient {
             int statusCode = response.getStatusLine().getStatusCode();
             log("statusCode: " + statusCode);
             if (statusCode == 200 || statusCode == 201) {
-                String resp = getText(response);
+                String resp = convertStreamToString(response.getEntity().getContent());
                 // Check JSON "success" status
                 if (Util.getJsonSuccessStatus(resp)) {
                     // auto response message is enabled to be received from the
