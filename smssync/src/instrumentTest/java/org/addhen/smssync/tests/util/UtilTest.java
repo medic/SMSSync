@@ -85,6 +85,18 @@ public class UtilTest extends BaseTest {
     }
 
     /**
+     * A Sync/Callback URL with special characters in the Basic Auth part of
+     * the URL is valid.
+     */
+    @SmallTest
+    public void testURLWithBasicAuthSpecialCharsIsValid(){
+        assertEquals(
+            Util.validateCallbackUrl("http://admin:$&#%?=~_|!,.;@example.com/test"),
+            0
+        );
+    }
+
+    /**
      * Test that email address is valid
      */
     @SmallTest
