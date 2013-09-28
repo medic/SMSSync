@@ -7,7 +7,6 @@ import org.addhen.smssync.models.Message;
 import org.addhen.smssync.models.SyncUrl;
 import org.addhen.smssync.net.MainHttpClient;
 import org.addhen.smssync.net.MessageSyncHttpClient;
-import org.addhen.smssync.net.MainHttpClient;;
 import org.addhen.smssync.util.Logger;
 import org.addhen.smssync.util.Util;
 
@@ -67,7 +66,7 @@ public class ProcessMessage {
      * @return boolean
      */
     public boolean syncReceivedSms(Message message, SyncUrl syncUrl) {
-        Logger.log(TAG, "syncReceivedSms(): Post received SMS to configured URL:" +
+        Logger.log(CLASS_TAG, "syncReceivedSms(): Post received SMS to configured URL:" +
                 message.toString() + " SyncUrlFragment: " + syncUrl.toString());
 
         MessageSyncHttpClient client = new MessageSyncHttpClient(
@@ -191,10 +190,8 @@ public class ProcessMessage {
         urlSecret = syncUrl.getSecret();
         uriBuilder.append("?task=send");
 
-        Logger.log(CLASS_TAG, "line 183");
 
         if (!TextUtils.isEmpty(urlSecret)) {
-            Logger.log(CLASS_TAG, "line 189");
             String urlSecretEncoded = urlSecret;
             uriBuilder.append("&secret=");
             try {
@@ -206,18 +203,22 @@ public class ProcessMessage {
             syncUrl.setUrl(uriBuilder.toString());
         }
 
-        Logger.log(CLASS_TAG, "line 201");
-        MessageSyncHttpClient client = new MessageSyncHttpClient(context, syncUrl);
-        String response = client.getFromWebService();
-        Logger.log(CLASS_TAG, "TaskCheckResponse: " + response);
-
-        // nothing to do if we have no response 
-        if (response == null || TextUtils.isEmpty(response)) {
-            Logger.log(CLASS_TAG, "line 208");
+        MainHttpClient client = new MainHttpClient(syncUrl.getUrl(), context);
+        String response = null;
+        try {
+            client.execute();
+            response = client.getResponse();
+        } catch (Exception e) {
+            setErrorMessage(e.getMessage());
             return;
         }
 
-        Logger.log(CLASS_TAG, "line 212");
+        // nothing to do if we have no response 
+        if (response == null || TextUtils.isEmpty(response)) {
+            setErrorMessage("Failed to get response.");
+            return;
+        }
+
         // process callback and payload properties
         JSONObject json = null;
         JSONObject payload = null;
@@ -447,24 +448,20 @@ public class ProcessMessage {
             JSONObject headers = getCallbackHeaders(cb);
 
             MainHttpClient client = new MainHttpClient(url, context);
+            client.setMethod(method);
 
             // add headers
             Iterator<String> iter = headers.keys();
             while (iter.hasNext()) {
                 String k = iter.next();
-                client.addHeader(k, headers.getString(k));
+                client.setHeader(k, headers.getString(k));
             }
 
-            if (method.equals("POST")) {
+            if (method.equals("POST") || method.equals("PUT")) {
                 client.setEntity(getCallbackData(cb));
-                client.executePost();
-            } else if (method.equals("PUT")) {
-                client.setEntity(getCallbackData(cb));
-                client.executePut();
-            } else {
-                client.executeGet();
             }
 
+            client.execute();
             processResponse(client.getResponse(), client.getResponseCode());
 
         } catch (Exception e) {
