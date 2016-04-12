@@ -160,9 +160,8 @@ public class ProcessSmsTest extends BaseTest {
         assertNotNull("Could not add sms to sms inbox", getContext().getContentResolver()
                 .insert(Uri.parse(ProcessSms.SMS_CONTENT_INBOX), values));
         // import messages
-        final int imported = mProcessSms.importMessages();
-        assertNotNullOrZero("Could not import messages", imported );
-
+        final boolean imported = mProcessSms.importMessages();
+        assertTrue("Could not import messages", imported);
     }
 
     @Override

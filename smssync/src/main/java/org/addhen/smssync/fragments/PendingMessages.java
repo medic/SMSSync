@@ -514,7 +514,7 @@ public class PendingMessages
     // Thread class to handle synchronous execution of message importation task.
     private class ImportMessagesTask extends ProgressTask {
 
-        protected Integer status;
+        protected boolean importSuccessful;
 
         protected Context appContext;
 
@@ -525,10 +525,9 @@ public class PendingMessages
 
         @Override
         protected Boolean doInBackground(String... args) {
-
-            status = new ProcessSms(appContext).importMessages();
+            importSuccessful = new ProcessSms(appContext).importMessages();
             //TODO:: refactor the status code to a boolean value
-            if (status == 0) {
+            if (importSuccessful) {
                 model.load();
             }
             return true;
@@ -537,10 +536,10 @@ public class PendingMessages
         @Override
         protected void onPostExecute(Boolean success) {
             super.onPostExecute(success);
-            if (success) {
-                if (status == 0) {
+            if (success != null && success) {
+                if (importSuccessful) {
                     adapter.setItems(model.getMessageList());
-                } else if (status == 1) {
+                } else {
                     toastLong(R.string.nothing_to_import);
                 }
             }

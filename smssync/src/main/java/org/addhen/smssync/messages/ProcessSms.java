@@ -162,14 +162,12 @@ public class ProcessSms {
     }
 
     /**
-     * TODO:// refactor so this method return boolean
-     *
      * Import messages from the messages app's table and puts them in SMSSync's outbox table. This
      * will allow messages the imported messages to be sync'd to the configured Sync URL.
      *
-     * @return int 0 for success, 1 for failure.
+     * @return {@code true} for success, {@code false} otherwise
      */
-    public int importMessages() {
+    public boolean importMessages() {
         Logger.log(CLASS_TAG,
                 "importMessages(): import messages from messages app");
         Prefs.loadPreferences(context);
@@ -201,10 +199,9 @@ public class ProcessSms {
                 } while (c.moveToNext());
             }
             c.close();
-            return 0;
-
+            return true;
         } else {
-            return 1;
+            return false;
         }
 
     }
