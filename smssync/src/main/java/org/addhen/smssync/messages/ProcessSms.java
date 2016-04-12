@@ -75,13 +75,10 @@ public class ProcessSms {
 
     public static final int TASK = 1;
 
-    public static HashMap<String, String> smsMap;
-
     private Context context;
 
     public ProcessSms(Context context) {
         this.context = context;
-        smsMap = new HashMap<String, String>();
     }
 
     /**
