@@ -416,38 +416,32 @@ public class ProcessMessage {
      * Make additional http requests based on response.
      */
     private void processCallback(JSONObject cb) throws Exception {
-        // load Prefs
-        Prefs.loadPreferences(context);
-
         if (cb == null) {
             return;
         }
 
-        try {
-            String url = getCallbackURL(cb);
-            String method = getCallbackMethod(cb);
-            JSONObject headers = getCallbackHeaders(cb);
+        Prefs.loadPreferences(context);
 
-            MainHttpClient client = new MainHttpClient(url, context);
-            client.setMethod(method);
+        String url = getCallbackURL(cb);
+        String method = getCallbackMethod(cb);
+        JSONObject headers = getCallbackHeaders(cb);
 
-            // add headers
-            Iterator<String> iter = headers.keys();
-            while (iter.hasNext()) {
-                String k = iter.next();
-                client.setHeader(k, headers.getString(k));
-            }
+        MainHttpClient client = new MainHttpClient(url, context);
+        client.setMethod(method);
 
-            if (method.equals("POST") || method.equals("PUT")) {
-                client.setEntity(getCallbackData(cb));
-            }
-
-            client.execute();
-            processResponse(client.getResponse(), client.getResponseCode());
-
-        } catch (Exception e) {
-            throw e;
+        // add headers
+        Iterator<String> iter = headers.keys();
+        while (iter.hasNext()) {
+            String k = iter.next();
+            client.setHeader(k, headers.getString(k));
         }
+
+        if (method.equals("POST") || method.equals("PUT")) {
+            client.setEntity(getCallbackData(cb));
+        }
+
+        client.execute();
+        processResponse(client.getResponse(), client.getResponseCode());
     }
 
     /**
