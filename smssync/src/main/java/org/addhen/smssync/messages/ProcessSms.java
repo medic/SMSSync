@@ -20,10 +20,11 @@
 
 package org.addhen.smssync.messages;
 
+import org.addhen.smssync.MainApplication;
 import org.addhen.smssync.Prefs;
+import org.addhen.smssync.database.Messages;
 import org.addhen.smssync.models.Message;
 import org.addhen.smssync.util.Logger;
-import org.addhen.smssync.util.SentMessagesUtil;
 import org.addhen.smssync.util.ServicesConstants;
 
 import android.app.PendingIntent;
@@ -308,19 +309,22 @@ public class ProcessSms {
      *
      * @param messageType the message type
      */
-    public boolean postToSentBox(Message message, int messageType) {
+    public void postToSentBox(Message message, int messageType) {
         Logger.log(CLASS_TAG, "postToSentBox(): post message to sentbox");
 
-        //TODO:: refactor this to use message obj directly
-        SentMessagesUtil.smsMap.put("messagesFrom", message.getFrom());
-        SentMessagesUtil.smsMap.put("messagesBody", message.getBody());
-        SentMessagesUtil.smsMap.put("messagesDate", message.getTimestamp());
-        SentMessagesUtil.smsMap.put("messagesUuid", message.getUuid());
-        SentMessagesUtil.smsMap
-                .put("messagesType", String.valueOf(messageType));
+        Messages messages = new Messages();
 
-        return SentMessagesUtil.processSentMessages(context);
+        String messageUuid = "";
+        if (message.getUuid() != null) {
+            messageUuid = message.getUuid();
+        }
+        messages.setMessageUuid(messageUuid);
 
+        messages.setMessageFrom(message.getFrom());
+        messages.setMessageBody(message.getBody());
+        messages.setMessageDate(message.getTimestamp());
+        messages.setMessageType(messageType);
+
+        MainApplication.mDb.addSentMessages(messages);
     }
-
 }

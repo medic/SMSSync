@@ -278,13 +278,12 @@ public class Database {
      *
      * @param messages - The messages to be added to the database.
      */
-    public void addSentMessages(List<Messages> messages) {
+    public void addSentMessages(Messages messages) {
         try {
             mDb.beginTransaction();
 
-            for (Messages message : messages) {
-                createSentMessages(message);
-            }
+            createSentMessages(messages);
+
             limitRows(SENT_MESSAGES_TABLE, 20, SENT_MESSAGES_UUID);
             mDb.setTransactionSuccessful();
         } finally {
