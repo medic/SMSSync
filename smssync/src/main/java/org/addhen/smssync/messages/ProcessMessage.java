@@ -82,21 +82,13 @@ public class ProcessMessage {
 
     /**
      * Sync pending messages to the configured sync URL.
-     *
-     * @param uuid The message uuid
      */
-    public boolean syncPendingMessages(String uuid) {
-        Logger.log(CLASS_TAG, "syncPendingMessages: push pending messages to the Sync URL" + uuid);
+    public boolean syncPendingMessages() {
+        Logger.log(CLASS_TAG, "syncPendingMessages: push pending messages to the Sync URL");
         Message messageModel = new Message();
-        List<Message> listMessages;
-        // check if it should sync by id
-        if (!TextUtils.isEmpty(uuid)) {
-            messageModel.loadByUuid(uuid);
+        messageModel.load();
 
-        } else {
-            messageModel.load();
-        }
-        listMessages = messageModel.getMessageList();
+        List<Message> listMessages = messageModel.getMessageList();
 
         if (listMessages != null && listMessages.size() > 0) {
 
@@ -104,13 +96,11 @@ public class ProcessMessage {
                 if (routeMessage(message)) {
                     messageModel.deleteMessagesByUuid(message.getUuid());
                 }
-
             }
             return true;
         }
 
         return false;
-
     }
 
     /**
