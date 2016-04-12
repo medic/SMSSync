@@ -495,25 +495,6 @@ public class ProcessMessage {
 
     }
 
-
-    /**
-     * Extract callback JSON data
-     * 
-     * @apram json_data - The json data to be formatted.
-     * @return boolean
-     */
-    private boolean extractCallbackJSON(String json_data) {
-        Logger.log(CLASS_TAG, "extractCallbackJSON(): Extracting callback JSON data" + json_data);
-        try {
-            JSONObject test = new JSONObject(json_data).getJSONObject("callback");
-            return true;
-        } catch (JSONException e) {
-            setErrorMessage(e.getMessage());
-            return false;
-        }
-    }
-
-
     /**
      * @param JSONObject callback - JSONObject representing the callback 
      * @return String url - The URL from the callback response
