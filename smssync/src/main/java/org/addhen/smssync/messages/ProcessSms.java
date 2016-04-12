@@ -205,7 +205,7 @@ public class ProcessSms {
      * Tries to locate the thread id given the address (phone number or email) of the message
      * sender.
      *
-     * @return the thread id
+     * @return the thread id, or {@code 0} if no thread was found
      */
     public long getThreadId(String body, String address) {
         Logger.log(CLASS_TAG, "getId(): thread id");
