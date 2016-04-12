@@ -182,8 +182,6 @@ public final class TrustManagerFactory {
             Log.e(LOG_TAG, "Unable to get X509 Trust Manager ", e);
         } catch (KeyStoreException e) {
             Log.e(LOG_TAG, "Key Store exception while initializing TrustManagerFactory ", e);
-        } finally {
-
         }
         unsecureTrustManager = new SimpleX509TrustManager();
     }
