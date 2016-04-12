@@ -54,26 +54,26 @@ import java.util.regex.PatternSyntaxException;
  */
 public class ProcessSms {
 
-    public static final Uri MMS_SMS_CONTENT_URI = Uri
+    private static final Uri MMS_SMS_CONTENT_URI = Uri
             .parse("content://mms-sms/");
 
-    public static final Uri THREAD_ID_CONTENT_URI = Uri.withAppendedPath(
+    private static final Uri THREAD_ID_CONTENT_URI = Uri.withAppendedPath(
             MMS_SMS_CONTENT_URI, "threadID");
 
-    public static final Uri CONVERSATION_CONTENT_URI = Uri.withAppendedPath(
+    private static final Uri CONVERSATION_CONTENT_URI = Uri.withAppendedPath(
             MMS_SMS_CONTENT_URI, "conversations");
 
-    public static final String SMS_CONTENT_URI = "content://sms/conversations/";
+    private static final String SMS_CONTENT_URI = "content://sms/conversations/";
 
-    public static final String SMS_ID = "_id";
+    private static final String SMS_ID = "_id";
 
-    public static final String SMS_CONTENT_INBOX = "content://sms/inbox";
+    private static final String SMS_CONTENT_INBOX = "content://sms/inbox";
 
     public static final int PENDING = 0;
 
     private static final String CLASS_TAG = ProcessSms.class.getSimpleName();
 
-    public static final int TASK = 1;
+    private static final int TASK = 1;
 
     private Context context;
 
