@@ -50,15 +50,6 @@ public class ProcessMessage {
     }
 
     /**
-     * Save SMS that failed to be sent to the sync Url to the the db.
-     */
-    public boolean saveMessage(Message message) {
-        Logger.log(CLASS_TAG,
-                "saveMessage(): save text messages as received from the user's phone");
-        return message.save();
-    }
-
-    /**
      * Sync received SMS to a configured sync URL.
      *
      * @param message The sms to be sync
@@ -275,7 +266,7 @@ public class ProcessMessage {
             } else {
                 //only save to pending when the number is not blacklisted
                 if(!Prefs.enableBlacklist){
-                    saveMessage(message);
+                    message.save();
                 }
             }
         }

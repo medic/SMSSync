@@ -34,8 +34,7 @@ public class ProcessMessageTest extends BaseTest {
     }
 
     @SmallTest
-    public void testShouldSaveMessage() throws Exception {
-        assertTrue("Could not add a new message ", mProcessMessage.saveMessage(mMessage));
+    public void testShouldDeleteMessage() throws Exception {
         assertTrue("Could not delete the message",mMessage.deleteAllMessages());
     }
 
