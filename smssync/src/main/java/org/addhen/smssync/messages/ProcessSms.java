@@ -89,14 +89,12 @@ public class ProcessSms {
      * @param timestamp - The timestamp of the message.
      * @return the message id
      */
-    public long findMessageId(long threadId,
-            long timestamp) {
+    public long findMessageId(long threadId, long timestamp) {
         Logger.log(CLASS_TAG,
                 "findMessageId(): get the message id using thread id and timestamp: threadId: "
                         + threadId + " timestamp: " + timestamp);
         long id = 0;
         if (threadId > 0) {
-
             Cursor cursor = context.getContentResolver().query(
                     ContentUris.withAppendedId(CONVERSATION_CONTENT_URI,
                             threadId),
@@ -109,7 +107,6 @@ public class ProcessSms {
                 try {
                     if (cursor.moveToFirst()) {
                         id = cursor.getLong(0);
-
                     }
                 } finally {
                     cursor.close();
