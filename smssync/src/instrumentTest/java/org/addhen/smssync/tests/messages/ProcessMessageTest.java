@@ -54,11 +54,6 @@ public class ProcessMessageTest extends BaseTest {
         assertTrue(posted);
     }
 
-    @SmallTest
-    public void testShouldSyncPendingMessagesByItsUuid() throws Exception {
-
-    }
-
     @MediumTest
     public void testShouldPerformTaskEnabledSyncUrl() throws Exception {
         SyncUrl syncUrlDemo = new SyncUrl();
@@ -189,11 +184,6 @@ public class ProcessMessageTest extends BaseTest {
         assertTrue("Could not sync pending messages, ",
                 posted);
         assertTrue(syncUrlTest.deleteAllSyncUrl());
-    }
-
-    @MediumTest
-    public void testShouldFailToRouteMessageToASingleEnabledSyncUrl() throws Exception {
-
     }
 
     @Override
