@@ -14,6 +14,31 @@ dependencies {
     //instrumentTestCompile 'com.squareup:fest-android:1.0.5'
 }
 
+def isReleaseBuild = {
+	return System.env.JENKINS == 'true' || (System.env.TRAVIS == 'true' &&
+			System.env.TRAVIS_BRANCH == 'master')
+}
+def getVersionCode = {
+	if(isReleaseBuild()) {
+		def code = System.env.TRAVIS == 'true' ?
+			System.env.TRAVIS_BUILD_NUMBER :
+			System.env.VERSION_TO_BUILD.split(/\./)[-1]
+		return Integer.parseInt(code)
+	}
+	return 1
+}
+def getVersionName = {
+	if(isReleaseBuild()) {
+		if(System.env.TRAVIS == 'true') {
+			def v = System.env.TRAVIS_BUILD_NUMBER
+			if(!v) throw new GradleException(
+					'Missing required env var: TRAVIS_BUILD_NUMBER')
+			return "medic_2.4.$v"
+		} else return System.env.VERSION_TO_BUILD
+	}
+	return 'SNAPSHOT'
+}
+
 android {
     compileSdkVersion 17
     buildToolsVersion "21.1.1"
@@ -72,10 +97,11 @@ android {
     }
 
     defaultConfig {
-        versionCode 18
-        versionName "2.4"
-        minSdkVersion 8
         targetSdkVersion 18
+        minSdkVersion 8
+        versionCode getVersionCode()
+        versionName getVersionName()
+        archivesBaseName = "${project.name}-${versionName}"
     }
 
     android.applicationVariants.all { variant ->
@@ -93,17 +119,8 @@ android {
             }
         }
 
-        def apk = variant.outputFile;
-
-        def newName = apk.name.replace(".apk",
-                "-v" + defaultConfig.versionName + "-" + variant.buildType.name.toUpperCase() +
-                        ".apk");
-
-        variant.outputFile = file("$project.buildDir/apk/" + newName);
-        if (variant.zipAlign) {
-            variant.zipAlign.outputFile =
-                    file("$project.buildDir/apk/" + newName.replace("-unaligned", ""));
-        }
+        def apkName = variant.outputFile.name.replace(".apk", "-${defaultConfig.versionName}.apk")
+        variant.outputFile = file("$project.buildDir/apk/" + apkName);
     }
 }
 
