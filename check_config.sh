@@ -1,0 +1,27 @@
+#!/bin/bash -eu
+
+function handle_bad_config {
+    echo "[$0] Please read BUILDING.txt for more info."
+    echo "[$0] BUILD FAILED"
+    exit 1
+}
+
+echo "[$0] Checking config..."
+localPropsFile=local.properties
+if [[ -z $ANDROID_HOME ]]; then
+    echo "[$0] environment variable ANDROID_HOME is not set."
+
+    if [[ ! -f $localPropsFile ]]; then
+        echo "[$0] File not found: $localPropsFile"
+        handle_bad_config
+    fi
+
+    if ! grep -q '^sdk\.dir=' $localPropsFile; then
+        echo "[$0] value 'sdk.dir' not set in file '$localPropsFile'."
+        handle_bad_config
+    fi
+
+    handle_bad_config
+fi
+
+echo "[$0] Config looks OK."
