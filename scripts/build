@@ -1,0 +1,9 @@
+#!/bin/bash -eu
+
+./scripts/check_config
+
+echo "[$0] Building smssync..."
+./gradlew clean assemble
+echo "[$0] Smssync built."
+
+./scripts/test
