@@ -2,6 +2,9 @@ apply plugin: 'android'
 
 repositories {
     mavenCentral()
+    maven {
+        url "$System.env.ANDROID_HOME/extras/android/m2repository/"
+    }
 }
 
 dependencies {
