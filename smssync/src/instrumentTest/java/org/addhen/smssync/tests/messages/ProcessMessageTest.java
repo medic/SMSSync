@@ -48,9 +48,9 @@ public class ProcessMessageTest extends BaseTest {
     public void testShouldSyncReceivedSms() throws Exception {
         SyncUrl syncUrl = new SyncUrl();
         syncUrl.setKeywords("");
-        syncUrl.setSecret("demo");
-        syncUrl.setTitle("ushahidi demo");
-        syncUrl.setUrl("http://demo.ushahidi.com/smssync");
+        syncUrl.setSecret("");
+        syncUrlEyedol.setTitle("eyedol demo");
+        syncUrlEyedol.setUrl("https://eyedol.crowdmap.com/smssync");
         final boolean posted = mProcessMessage.syncReceivedSms(mMessage, syncUrl);
         assertTrue(posted);
     }
