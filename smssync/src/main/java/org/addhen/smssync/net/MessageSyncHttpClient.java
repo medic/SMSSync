@@ -131,7 +131,7 @@ public class MessageSyncHttpClient extends MainHttpClient {
         String response = getResponse();
         int statusCode = getResponseCode();
 
-        if (statusCode != 200 && statusCode != 201) {
+        if (statusCode < 200 || statusCode >= 300) {
             setServerError("bad http return code", statusCode);
             return false;
         }
