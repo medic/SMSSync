@@ -1,6 +1,7 @@
 package org.addhen.smssync.tests.messages;
 
 import org.addhen.smssync.Prefs;
+import org.addhen.smssync.database.Database;
 import org.addhen.smssync.messages.ProcessMessage;
 import org.addhen.smssync.messages.ProcessSms;
 import org.addhen.smssync.models.Message;
