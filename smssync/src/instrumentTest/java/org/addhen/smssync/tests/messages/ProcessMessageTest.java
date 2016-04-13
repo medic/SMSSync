@@ -21,6 +21,7 @@ public class ProcessMessageTest extends BaseTest {
     private Message mMessage;
 
     private ProcessSms mProcessSms;
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -35,7 +36,11 @@ public class ProcessMessageTest extends BaseTest {
 
     @SmallTest
     public void testShouldDeleteMessage() throws Exception {
-        assertTrue("Could not delete the message",mMessage.deleteAllMessages());
+        // when
+        mMessage.deleteAllMessages();
+
+        // then
+        assertEquals("Could not delete the message", 0, Database.messageContentProvider.messagesCount());
     }
 
     @MediumTest
