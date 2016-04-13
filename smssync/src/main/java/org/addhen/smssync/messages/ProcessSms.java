@@ -215,7 +215,7 @@ public class ProcessSms {
         sb.append("address=" + DatabaseUtils.sqlEscapeString(address) + " AND ");
         sb.append("body=" + DatabaseUtils.sqlEscapeString(body));
 
-        Cursor c = context.getContentResolver().query(uriSms, null, null, null,
+        Cursor c = context.getContentResolver().query(uriSms, null, sb.toString(), null,
                 "date DESC ");
 
         if (c != null) {
