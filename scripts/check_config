@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 function handle_bad_config {
-    echo "[$0] Please read BUILDING.txt for more info."
+    echo "[$0] Please read README.md for more info."
     echo "[$0] BUILD FAILED"
     exit 1
 }
