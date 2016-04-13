@@ -66,13 +66,24 @@ import java.util.HashMap;
 
 public class MainHttpClient {
 
-    protected static DefaultHttpClient httpClient;
-
-    protected static StringBuilder userAgent;
+    public static class Response {
+        public final int statusCode;
+        public final String statusMessage;
+        public final String content;
+        private Response(int statusCode, String statusMessage, String content) {
+            this.statusCode = statusCode;
+            this.statusMessage = statusMessage;
+            this.content = content;
+        }
+    }
 
     protected Context context;
 
     protected String url;
+
+    private DefaultHttpClient httpClient;
+
+    private StringBuilder userAgent;
 
     private HttpParams httpParameters;
 
@@ -92,15 +103,7 @@ public class MainHttpClient {
 
     private String method;
 
-    private int responseCode;
-
-    private String response;
-
-    private HttpResponse httpResponse;
-
     private HttpRequestBase request; 
-
-    private String responseErrorMessage;
 
     public MainHttpClient(String url, Context context) {
 
@@ -174,22 +177,6 @@ public class MainHttpClient {
         } catch (NameNotFoundException e) {
             debug(e);
         }
-    }
-
-    public String getResponse() {
-        return response;
-    }
-
-    public HttpResponse getResponseObject() {
-        return httpResponse;
-    }
-
-    public String getResponseErrorMessage() {
-        return responseErrorMessage;
-    }
-
-    public int getResponseCode() {
-        return responseCode;
     }
 
     public void addParam(String name, String value) {
@@ -267,7 +254,7 @@ public class MainHttpClient {
         return null;
     }
 
-    public static String base64Encode(String str) {
+    private static String base64Encode(String str) {
         byte[] bytes = str.getBytes();
         return Base64.encodeToString(bytes, Base64.NO_WRAP);
     }
@@ -279,8 +266,7 @@ public class MainHttpClient {
         return throwable;
     }
 
-    public static String convertStreamToString(InputStream is) {
-
+    private static String convertStreamToString(InputStream is) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         StringBuilder sb = new StringBuilder();
 
@@ -301,28 +287,26 @@ public class MainHttpClient {
         return sb.toString();
     }
 
-    public void execute() throws Exception {
-
+    public Response execute() throws Exception {
+        InputStream instream = null;
         try {
             prepareRequest();
-            httpResponse = httpClient.execute(request);
-            responseCode = httpResponse.getStatusLine().getStatusCode();
-            responseErrorMessage = httpResponse.getStatusLine().getReasonPhrase();
-            HttpEntity entity = httpResponse.getEntity();
+            HttpResponse httpResponse = httpClient.execute(request);
+            int statusCode = httpResponse.getStatusLine().getStatusCode();
+            String statusMessage = httpResponse.getStatusLine().getReasonPhrase();
+            String content = null;
 
+            HttpEntity entity = httpResponse.getEntity();
             if (entity != null) {
-                InputStream instream = entity.getContent();
-                response = convertStreamToString(instream);
-                // Closing the input stream will trigger connection release
-                instream.close();
+                instream = entity.getContent();
+                content = convertStreamToString(instream);
             }
 
-        } catch (ClientProtocolException e)  {
-            httpClient.getConnectionManager().shutdown();
-            throw e;
+            return new Response(statusCode, statusMessage, content);
         } catch (Exception e) {
-            httpClient.getConnectionManager().shutdown();
             throw e;
+        } finally {
+            if(instream != null) try { instream.close(); } catch(IOException ex) {}
         }
     }
 

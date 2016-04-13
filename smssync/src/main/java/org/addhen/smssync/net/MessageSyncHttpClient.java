@@ -120,32 +120,30 @@ public class MessageSyncHttpClient extends MainHttpClient {
      * @return boolean
      */
     public boolean postSmsToWebService() {
+        Response response = null;
 
         try {
-            execute();
+            response = execute();
         } catch (Exception e) {
             log("Request failed", e);
             setClientError("Request failed. " + e.getMessage());
         }
 
-        String response = getResponse();
-        int statusCode = getResponseCode();
-
-        if (statusCode < 200 || statusCode >= 300) {
-            setServerError("bad http return code", statusCode);
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+            setServerError("bad http return code", response.statusCode);
             return false;
         }
 
-        if (Util.getJsonSuccessStatus(response)) {
+        if (Util.getJsonSuccessStatus(response.content)) {
             // auto response message is enabled to be received from the
             // server.
-            setServerSuccessResp(response);
+            setServerSuccessResp(response.content);
             return true;
         }
 
-        String payloadError = Util.getJsonError(response);
+        String payloadError = Util.getJsonError(response.content);
         if (!TextUtils.isEmpty(payloadError)) {
-            setServerError(payloadError, statusCode);
+            setServerError(payloadError, response.statusCode);
         }
 
         return false;

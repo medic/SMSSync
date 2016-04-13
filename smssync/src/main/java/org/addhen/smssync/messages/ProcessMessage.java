@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.addhen.smssync.messages.ProcessSms.PENDING;
+import static android.text.TextUtils.isEmpty;
 
 /**
  * Process messages
@@ -185,17 +186,16 @@ public class ProcessMessage {
         }
 
         MainHttpClient client = new MainHttpClient(syncUrl.getUrl(), context);
-        String response = null;
+        MainHttpClient.Response response = null;
         try {
-            client.execute();
-            response = client.getResponse();
+            response = client.execute();
         } catch (Exception e) {
             setErrorMessage(e.getMessage());
             return;
         }
 
         // nothing to do if we have no response 
-        if (response == null || TextUtils.isEmpty(response)) {
+        if (isEmpty(response.content)) {
             setErrorMessage("Failed to get response.");
             return;
         }
@@ -206,7 +206,7 @@ public class ProcessMessage {
         JSONObject callback = null;
 
         try {
-            json = new JSONObject(response);
+            json = new JSONObject(response.content);
             payload = json.getJSONObject("payload");
             callback = json.getJSONObject("callback");
         } catch (JSONException e) {
@@ -440,8 +440,8 @@ public class ProcessMessage {
             client.setEntity(getCallbackData(cb));
         }
 
-        client.execute();
-        processResponse(client.getResponse(), client.getResponseCode());
+        MainHttpClient.Response response = client.execute();
+        processResponse(response.content, response.statusCode);
     }
 
     /**
