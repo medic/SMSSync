@@ -70,7 +70,7 @@ log "About to build test app"
 no_device_running_create_one
 
 log "Building test app..."
-./gradlew clean connectedInstrumentTest --continue
+./gradlew connectedInstrumentTest --continue
 log "Test app built."
 
 log "BUILD COMPLETE"
