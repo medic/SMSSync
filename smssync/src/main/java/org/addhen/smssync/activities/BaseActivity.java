@@ -30,7 +30,6 @@ import org.addhen.smssync.R;
 import org.addhen.smssync.adapters.NavDrawerAdapter;
 import org.addhen.smssync.navdrawer.BaseNavDrawerItem;
 import org.addhen.smssync.navdrawer.BlacklistNavDrawerItem;
-import org.addhen.smssync.navdrawer.DonationNavDrawerItem;
 import org.addhen.smssync.navdrawer.PendingMessagesNavDrawerItem;
 import org.addhen.smssync.navdrawer.SentMessagesNavDrawerItem;
 import org.addhen.smssync.navdrawer.SyncUrlNavDrawerItem;
@@ -108,8 +107,6 @@ public abstract class BaseActivity<V extends View> extends SherlockFragmentActiv
     private SentMessagesNavDrawerItem sentMessagesNavDrawerItem;
 
     private SyncUrlNavDrawerItem syncUrlNavDrawerItem;
-
-    //final DonationNavDrawerItem donationNavDrawerItem;
 
     private BlacklistNavDrawerItem filterNavDrawerItem;
 
@@ -290,9 +287,6 @@ public abstract class BaseActivity<V extends View> extends SherlockFragmentActiv
                 R.string.sync_url),
                 R.drawable.sync_url, BaseActivity.this);
 
-        /*donationNavDrawerItem = new DonationNavDrawerItem(getString(R.string.donate),
-                R.drawable.donate, BaseActivity.this);*/
-
         filterNavDrawerItem = new BlacklistNavDrawerItem(getString(R.string.blacklist),
                 R.drawable.blacklist, BaseActivity.this);
 
@@ -311,14 +305,12 @@ public abstract class BaseActivity<V extends View> extends SherlockFragmentActiv
                 sentMessagesNavDrawerItem.setCounter();
                 pendingMessagesNavDrawerItem.setCounter();
                 syncUrlNavDrawerItem.setCounter();
-                //donationNavDrawerItem.setCounter();
                 filterNavDrawerItem.setCounter();
                 whitelistNavDrawerItem.setCounter();
                 navDrawerItem.clear();
                 navDrawerItem.add(pendingMessagesNavDrawerItem);
                 navDrawerItem.add(sentMessagesNavDrawerItem);
                 navDrawerItem.add(syncUrlNavDrawerItem);
-                //navDrawerItem.add(donationNavDrawerItem);
                 navDrawerItem.add(whitelistNavDrawerItem);
                 navDrawerItem.add(filterNavDrawerItem);
                 navDrawerAdapter.setItems(navDrawerItem);
@@ -493,84 +485,4 @@ public abstract class BaseActivity<V extends View> extends SherlockFragmentActiv
         }
 
     }
-
-    //TODO:: remove this code at some point
-    private class NavDrawerItemTask extends ProgressTask {
-
-        PendingMessagesNavDrawerItem pendingMessagesNavDrawerItem;
-
-        SentMessagesNavDrawerItem sentMessagesNavDrawerItem;
-
-        SyncUrlNavDrawerItem syncUrlNavDrawerItem;
-
-        DonationNavDrawerItem donationNavDrawerItem;
-
-        BlacklistNavDrawerItem filterNavDrawerItem;
-
-        WhitelistNavDrawerItem whitelistNavDrawerItem;
-
-        List<BaseNavDrawerItem> navDrawerItem;
-
-        protected NavDrawerItemTask(Activity activity) {
-            super(activity);
-            pendingMessagesNavDrawerItem
-                    = new PendingMessagesNavDrawerItem(
-                    getString(R.string.pending_messages),
-                    R.drawable.pending, BaseActivity.this);
-
-            sentMessagesNavDrawerItem = new SentMessagesNavDrawerItem(
-                    getString(R.string.sent_messages),
-                    R.drawable.sent, BaseActivity.this);
-
-            syncUrlNavDrawerItem = new SyncUrlNavDrawerItem(getString(
-                    R.string.sync_url),
-                    R.drawable.sync_url, BaseActivity.this);
-
-            donationNavDrawerItem = new DonationNavDrawerItem(getString(R.string.donate),
-                    R.drawable.donate, BaseActivity.this);
-
-            filterNavDrawerItem = new BlacklistNavDrawerItem(getString(R.string.blacklist),
-                    R.drawable.blacklist, BaseActivity.this);
-
-            whitelistNavDrawerItem = new WhitelistNavDrawerItem(getString(R.string.whitelist),
-                    R.drawable.whitelist, BaseActivity.this);
-
-            navDrawerItem = new ArrayList<BaseNavDrawerItem>();
-
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            dialog.cancel();
-        }
-
-        @Override
-        protected Boolean doInBackground(String... strings) {
-            // load all checked syncurl
-            sentMessagesNavDrawerItem.setCounter();
-            pendingMessagesNavDrawerItem.setCounter();
-            syncUrlNavDrawerItem.setCounter();
-            donationNavDrawerItem.setCounter();
-            filterNavDrawerItem.setCounter();
-            whitelistNavDrawerItem.setCounter();
-            navDrawerItem.add(pendingMessagesNavDrawerItem);
-            navDrawerItem.add(sentMessagesNavDrawerItem);
-            navDrawerItem.add(syncUrlNavDrawerItem);
-            navDrawerItem.add(donationNavDrawerItem);
-            navDrawerItem.add(whitelistNavDrawerItem);
-            navDrawerItem.add(filterNavDrawerItem);
-
-            return true;
-        }
-
-        @Override
-        protected void onPostExecute(Boolean success) {
-            super.onPostExecute(success);
-            navDrawerAdapter.setItems(navDrawerItem);
-            listView.setAdapter(navDrawerAdapter);
-            selectItem(0);
-        }
-    }
-
 }
