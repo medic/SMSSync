@@ -7,11 +7,8 @@ repositories {
 dependencies {
     compile fileTree(dir: 'libs', include: '*.jar')
     compile 'com.actionbarsherlock:actionbarsherlock:4.4.0@aar'
-    compile 'com.android.support:support-v4:23.2.1'
+    compile 'com.android.support:support-v4:22.0.0'
     compile 'com.squareup:otto:1.3.4'
-    // Disabling this for now. Causing out of memory exception when building
-    //instrumentTestCompile 'org.robolectric:robolectric:2.2-SNAPSHOT'
-    //instrumentTestCompile 'com.squareup:fest-android:1.0.5'
 }
 
 def isReleaseBuild = {
@@ -43,6 +40,7 @@ android {
     compileSdkVersion 17
     buildToolsVersion "21.1.1"
 
+
     sourceSets {
 
         main {
@@ -52,9 +50,12 @@ android {
         }
 
         defaultConfig {
-            testPackageName "org.addhen.smssync.tests"
-            packageName "org.addhen.smssync"
+            applicationId 'org.medicmobile.gateway.smssync'
+            testApplicationId 'org.medicmobile.gateway.smssync.test'
         }
+
+	// For legacy reasons, what would normally be src/androidTest is instead src/instrumentTest
+	androidTest.setRoot('src/instrumentTest')
 
         // Move the build types to build-types/<type>
         // For instance, build-types/debug/java, build-types/debug/AndroidManifest.xml, ...
@@ -72,28 +73,15 @@ android {
     }
 
     buildTypes {
-
-        proguard.initWith(buildTypes.debug)
-        proguard {
-            runProguard true
-            proguardFile getDefaultProguardFile('proguard-android.txt')
-        }
-
         release {
             signingConfig signingConfigs.releaseSign
+            proguardFile getDefaultProguardFile('proguard-android.txt')
         }
 
         debug {
-            packageNameSuffix ".debug"
+            applicationIdSuffix ".debug"
             versionNameSuffix "-DEBUG"
         }
-
-        proguard.initWith(buildTypes.release)
-        proguard {
-            runProguard true
-            proguardFile getDefaultProguardFile('proguard-android.txt')
-        }
-
     }
 
     defaultConfig {
@@ -118,9 +106,6 @@ android {
                 valuesFile.write(content, 'UTF-8')
             }
         }
-
-        def apkName = variant.outputFile.name.replace(".apk", "-${defaultConfig.versionName}.apk")
-        variant.outputFile = file("$project.buildDir/apk/" + apkName);
     }
 }
 
@@ -138,6 +123,3 @@ if (project.hasProperty('releaseKeyStore') &&
     android.signingConfigs.releaseSign.storePassword ""
     android.signingConfigs.releaseSign.keyPassword ""
 }
-
-
-

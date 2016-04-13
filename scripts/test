@@ -33,7 +33,7 @@ echo "[$0] About to build test app"
 no_device_running_create_one
 
 echo "[$0] Building test app..."
-./gradlew connectedInstrumentTest --continue
+./gradlew connectedCheck --continue
 echo "[$0] Test app built."
 
 echo "[$0] BUILD COMPLETE"
