@@ -104,6 +104,10 @@ android {
             }
         }
     }
+
+    lintOptions {
+	abortOnError false
+    }
 }
 
 if (project.hasProperty('releaseKeyStore') &&
