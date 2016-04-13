@@ -13,6 +13,7 @@ import android.test.suitebuilder.annotation.SmallTest;
  * Test process sms
  */
 public class ProcessSmsTest extends BaseTest {
+    private static final Uri SMS_CONTENT_INBOX = Uri.parse("content://sms/inbox");
 
     private static final String REGEX = "\\d{2}(am|pm)";
 
@@ -35,7 +36,7 @@ public class ProcessSmsTest extends BaseTest {
         values.put("address", address);
         values.put("body", body);
         Uri uriSms  = getContext().getContentResolver()
-                .insert(Uri.parse(ProcessSms.SMS_CONTENT_INBOX), values);
+                .insert(SMS_CONTENT_INBOX, values);
 
         assertNotNull("Could not add sms to sms inbox",uriSms);
 
@@ -51,7 +52,7 @@ public class ProcessSmsTest extends BaseTest {
         c.close();
         long threadId = mProcessSms.getThreadId(body, address);
         assertTrue("Could not find message ID ",mProcessSms.findMessageId(threadId,timeStamp) > 0);
-        assertTrue("Could not delete sms from  inbox ", mProcessSms.delSmsFromInbox(body, address));
+        mProcessSms.delSmsFromInbox(body, address);
     }
 
     @SmallTest
@@ -90,11 +91,11 @@ public class ProcessSmsTest extends BaseTest {
         values.put("address", address);
         values.put("body", body);
         assertNotNull("Could not add sms to sms inbox", getContext().getContentResolver()
-                .insert(Uri.parse(ProcessSms.SMS_CONTENT_INBOX), values));
+                .insert(SMS_CONTENT_INBOX, values));
 
         final long msgThreadId = mProcessSms.getThreadId(body, address);
         assertTrue("Could not get sms thread Id", msgThreadId > 0);
-        assertTrue("Could not delete sms from  inbox ", mProcessSms.delSmsFromInbox(body, address));
+        mProcessSms.delSmsFromInbox(body, address);
 
     }
 
@@ -111,9 +112,10 @@ public class ProcessSmsTest extends BaseTest {
         values.put("address", address);
         values.put("body", body);
         assertNotNull("Could not add sms to sms inbox", getContext().getContentResolver()
-                .insert(Uri.parse(ProcessSms.SMS_CONTENT_INBOX), values));
-        final boolean rowDeleted = mProcessSms.delSmsFromInbox(body, address);
-        assertTrue("Could not delete sms from sms inbox", rowDeleted);
+                .insert(SMS_CONTENT_INBOX, values));
+        mProcessSms.delSmsFromInbox(body, address);
+        assertEquals("Could not delete sms from sms inbox", 0,
+                getContext().getContentResolver().query(SMS_CONTENT_INBOX, null, null, null, null).getColumnCount());
     }
 
     @SmallTest
@@ -124,7 +126,8 @@ public class ProcessSmsTest extends BaseTest {
         message.setTimestamp("1370831690572");
         message.setBody("foo bar");
         assertTrue("Could not add a new message ", message.save());
-        assertTrue(mProcessSms.postToSentBox(message, ProcessSms.PENDING));
+        mProcessSms.postToSentBox(message, ProcessSms.PENDING);
+        assertEquals(1, message.totalMessages());
         assertTrue("Could not delete the message",message.deleteAllMessages());
 
     }
@@ -137,7 +140,8 @@ public class ProcessSmsTest extends BaseTest {
         message.setBody("foo bar");
         message.setTimestamp("1370831690572");
         assertTrue("Could not add a new message ",message.save());
-        assertTrue(mProcessSms.postToSentBox(message, ProcessSms.TASK));
+        mProcessSms.postToSentBox(message, ProcessSms.TASK);
+        assertEquals(1, message.totalMessages());
         assertTrue("Could not delete the message",message.deleteAllMessages());
     }
 
@@ -154,11 +158,11 @@ public class ProcessSmsTest extends BaseTest {
         values.put("address", address);
         values.put("body", body);
         assertNotNull("Could not add sms to sms inbox", getContext().getContentResolver()
-                .insert(Uri.parse(ProcessSms.SMS_CONTENT_INBOX), values));
+                .insert(SMS_CONTENT_INBOX, values));
         assertNotNull("Could not add sms to sms inbox", getContext().getContentResolver()
-                .insert(Uri.parse(ProcessSms.SMS_CONTENT_INBOX), values));
+                .insert(SMS_CONTENT_INBOX, values));
         assertNotNull("Could not add sms to sms inbox", getContext().getContentResolver()
-                .insert(Uri.parse(ProcessSms.SMS_CONTENT_INBOX), values));
+                .insert(SMS_CONTENT_INBOX, values));
         // import messages
         final boolean imported = mProcessSms.importMessages();
         assertTrue("Could not import messages", imported);

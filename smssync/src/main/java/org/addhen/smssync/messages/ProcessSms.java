@@ -74,7 +74,7 @@ public class ProcessSms {
 
     private static final String CLASS_TAG = ProcessSms.class.getSimpleName();
 
-    private static final int TASK = 1;
+    public static final int TASK = 1;
 
     private Context context;
 
