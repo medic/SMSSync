@@ -12,7 +12,23 @@ Insallation and configuration details are [here][1].
 
 ## Development
 
-Documentation for developers can be found [here][2].
+### CI
+
+There is a build on travis: <a href="https://travis-ci.org/medic/SMSSync"><img src="https://travis-ci.org/medic/SMSSync.svg?branch=master"/></a>
+
+### Testing locally
+
+To run the test suite locally:
+
+	make test
+
+The test suite currently relies on a few factors, including the operating system running on the test device, and internet connectivity of the test device.  This means you may see some unexpected failures.  Travis should not see these failures.
+
+### Building/installing locally
+
+To build a debug build locally and deploy to a connected device:
+
+	make
 
 ## Support
 

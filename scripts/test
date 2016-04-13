@@ -1,6 +1,6 @@
 #!/bin/bash -eu
 
-./check_config.sh
+./scripts/check_config
 
 function no_device_running_create_one {
     if ! adb devices | grep -w -q 'device'; then
