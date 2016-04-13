@@ -41,7 +41,7 @@ public class ProcessMessageTest extends BaseTest {
         mMessage.deleteAllMessages();
 
         // then
-        assertEquals("Could not delete the message", 0, Database.messageContentProvider.messagesCount());
+        assertEquals("Could not delete the message", 0, Database.messagesContentProvider.messagesCount());
     }
 
     @MediumTest
