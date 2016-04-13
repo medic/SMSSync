@@ -106,6 +106,7 @@ public class ProcessSmsTest extends BaseTest {
 
     @SmallTest
     public void testShouldDeleteSmsFromSmsInbox() throws Exception {
+        // given
         final String body = "foo bar";
         final String address = "123443";
         ContentValues values = new ContentValues();
@@ -113,9 +114,13 @@ public class ProcessSmsTest extends BaseTest {
         values.put("body", body);
         assertNotNull("Could not add sms to sms inbox", getContext().getContentResolver()
                 .insert(SMS_CONTENT_INBOX, values));
+        int oldCount = smsInboxCount();
+
+        // when
         mProcessSms.delSmsFromInbox(body, address);
-        assertEquals("Could not delete sms from sms inbox", 0,
-                getContext().getContentResolver().query(SMS_CONTENT_INBOX, null, null, null, null).getColumnCount());
+
+        // then
+        assertEquals("Could not delete sms from sms inbox", oldCount - 1, smsInboxCount());
     }
 
     @SmallTest
@@ -171,5 +176,11 @@ public class ProcessSmsTest extends BaseTest {
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
+    }
+
+    private int smsInboxCount() {
+        return getContext().getContentResolver()
+                .query(SMS_CONTENT_INBOX, null, null, null, null)
+                .getColumnCount();
     }
 }
