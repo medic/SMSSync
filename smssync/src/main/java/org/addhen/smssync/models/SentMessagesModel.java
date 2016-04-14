@@ -29,9 +29,6 @@ import android.database.Cursor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * TODO:: refactor
- */
 public class SentMessagesModel extends Model {
 
     private String message;
