@@ -16,7 +16,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
  
 import android.content.Context;
-import android.text.TextUtils;
 
 import java.util.Iterator;
 import java.util.List;
@@ -162,7 +161,7 @@ public class ProcessMessage {
         urlSecret = syncUrl.getSecret();
         uriBuilder.append("?task=send");
 
-        if (!TextUtils.isEmpty(urlSecret)) {
+        if (!isEmpty(urlSecret)) {
             uriBuilder.append("&secret=");
             uriBuilder.append(urlEncode(urlSecret));
             syncUrl.setUrl(uriBuilder.toString());
@@ -250,7 +249,7 @@ public class ProcessMessage {
         boolean posted = false;
 
         // process filter text (keyword or RegEx)
-        if (!TextUtils.isEmpty(syncUrl.getKeywords())) {
+        if (!isEmpty(syncUrl.getKeywords())) {
             String filterText = syncUrl.getKeywords();
             if (processSms.filterByKeywords(message.getBody(), filterText)
                     || processSms.filterByRegex(message.getBody(), filterText)) {
@@ -359,7 +358,7 @@ public class ProcessMessage {
 
         try {
             String task = payload.getString("task");
-            boolean secretOk = TextUtils.isEmpty(urlSecret) ||
+            boolean secretOk = isEmpty(urlSecret) ||
                     urlSecret.equals(payload.getString("secret"));
             if (secretOk && task.equals("send")) {
                 JSONArray jsonArray = payload.getJSONArray("messages");
@@ -466,7 +465,7 @@ public class ProcessMessage {
             String port = options.getString("port");
             String path = options.getString("path");
             String url = "";
-            if (port == "null" || TextUtils.isEmpty(port)) {
+            if (port == "null" || isEmpty(port)) {
                 url = "http://" + host + path;
             } else if (port == "443") {
                 url = "https://" + host + path;
