@@ -465,9 +465,9 @@ public class ProcessMessage {
             String port = options.getString("port");
             String path = options.getString("path");
             String url = "";
-            if (port == "null" || isEmpty(port)) {
+            if (isEmpty(port) || "null".equals(port)) {
                 url = "http://" + host + path;
-            } else if (port == "443") {
+            } else if ("443".equals(port)) {
                 url = "https://" + host + path;
             } else {
                 url = "http://" + host + ":" + port + path;
