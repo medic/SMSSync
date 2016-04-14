@@ -38,7 +38,6 @@ import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Matcher;
