@@ -25,7 +25,7 @@ package org.addhen.smssync.models;
  */
 public class NavDrawerItem extends Model {
 
-    public static int NO_ICON_RES_ID = -1;
+    public static final int NO_ICON_RES_ID = -1;
 
     // Resource id for the title string
     protected String mTitle;
