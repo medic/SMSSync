@@ -40,10 +40,6 @@ import java.util.List;
 public class MessagesContentProvider extends DbContentProvider implements
         IMessagesContentProvider, IMessagesSchema {
 
-    private Cursor cursor;
-
-    private List<Message> listMessages;
-
     private ContentValues initialValues;
 
     private final static String TAG = MessagesContentProvider.class.getSimpleName();
@@ -141,12 +137,12 @@ public class MessagesContentProvider extends DbContentProvider implements
      */
     @Override
     public List<Message> fetchMessagesByUuid(String messageUuid) {
-        listMessages = new ArrayList<Message>();
+        ArrayList<Message> listMessages = new ArrayList<Message>();
         String selection = MESSAGE_UUID + "= ?";
         String selectionArgs[] = {
                 messageUuid
         };
-        cursor = super.query(TABLE, COLUMNS, selection, selectionArgs, DATE
+        Cursor cursor = super.query(TABLE, COLUMNS, selection, selectionArgs, DATE
                 + " DESC");
 
         if (cursor != null) {
@@ -172,8 +168,8 @@ public class MessagesContentProvider extends DbContentProvider implements
      */
     @Override
     public List<Message> fetchAllMessages() {
-        listMessages = new ArrayList<Message>();
-        cursor = super.query(TABLE, COLUMNS, null, null, DATE + " DESC");
+        ArrayList<Message> listMessages = new ArrayList<Message>();
+        Cursor cursor = super.query(TABLE, COLUMNS, null, null, DATE + " DESC");
 
         if (cursor != null) {
             try {
@@ -199,8 +195,8 @@ public class MessagesContentProvider extends DbContentProvider implements
      */
     @Override
     public List<Message> fetchMessagesByLimit(int limit) {
-        listMessages = new ArrayList<Message>();
-        cursor = super.query(TABLE, COLUMNS, null, null, MESSAGE_UUID + " DESC",
+        ArrayList<Message> listMessages = new ArrayList<Message>();
+        Cursor cursor = super.query(TABLE, COLUMNS, null, null, MESSAGE_UUID + " DESC",
                 String.valueOf(limit));
         if (cursor != null) {
             try {
