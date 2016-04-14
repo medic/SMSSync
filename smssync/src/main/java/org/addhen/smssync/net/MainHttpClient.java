@@ -308,7 +308,7 @@ public class MainHttpClient {
 
             return new Response(statusCode, statusMessage, new JSONObject(content));
         } finally {
-            if(instream != null) try { instream.close(); } catch(IOException ex) {}
+            if(instream != null) try { instream.close(); } catch(IOException ex) { debug(ex); }
         }
     }
 
