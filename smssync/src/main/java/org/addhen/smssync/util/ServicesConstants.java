@@ -22,31 +22,31 @@ package org.addhen.smssync.util;
 
 public class ServicesConstants {
 
-    public static int CHECK_TASK_SERVICE_REQUEST_CODE = 0;
+    public static final int CHECK_TASK_SERVICE_REQUEST_CODE = 0;
 
-    public static int CHECK_TASK_SCHEDULED_SERVICE_REQUEST_CODE = 1;
+    public static final int CHECK_TASK_SCHEDULED_SERVICE_REQUEST_CODE = 1;
 
-    public static int AUTO_SYNC_SERVICE_REQUEST_CODE = 2;
+    public static final int AUTO_SYNC_SERVICE_REQUEST_CODE = 2;
 
-    public static int AUTO_SYNC_SCHEDULED_SERVICE_REQUEST_CODE = 3;
+    public static final int AUTO_SYNC_SCHEDULED_SERVICE_REQUEST_CODE = 3;
 
-    public static String AUTO_SYNC_ACTION = "org.addhen.smssync.syncservices.autosync";
+    public static final String AUTO_SYNC_ACTION = "org.addhen.smssync.syncservices.autosync";
 
-    public static String CHECT_TASK_ACTION = "org.addhen.smssync.syncservices.checktask";
+    public static final String CHECT_TASK_ACTION = "org.addhen.smssync.syncservices.checktask";
 
-    public static String AUTO_SYNC_SCHEDULED_ACTION
+    public static final String AUTO_SYNC_SCHEDULED_ACTION
             = "org.addhen.smssync.syncservices.autosyncscheduled";
 
-    public static String CHECT_TASK_SCHEDULED_ACTION
+    public static final String CHECT_TASK_SCHEDULED_ACTION
             = "org.addhen.smssync.syncservices.checktaskscheduled";
 
-    public static String FAILED_ACTION = "org.addhen.smssync.syncservices.failed";
+    public static final String FAILED_ACTION = "org.addhen.smssync.syncservices.failed";
 
-    public static String MESSAGE_UUID = "message_uuid";
+    public static final String MESSAGE_UUID = "message_uuid";
 
-    public static String SENT = "SMS_SENT";
+    public static final String SENT = "SMS_SENT";
 
-    public static String DELIVERED = "SMS_DELIVERED";
+    public static final String DELIVERED = "SMS_DELIVERED";
 
     public static final int ACTIVE_SYNC_URL = 1;
 
