@@ -86,8 +86,6 @@ public class MainHttpClient {
 
     private DefaultHttpClient httpClient;
 
-    private StringBuilder userAgent;
-
     private HttpParams httpParameters;
 
     private int timeoutConnection = 60000;
@@ -171,7 +169,7 @@ public class MainHttpClient {
             final String versionName = context.getPackageManager().getPackageInfo(
                     context.getPackageName(), 0).versionName;
             // Add version name to user agent
-            userAgent = new StringBuilder("SMSSync-Android/");
+            StringBuilder userAgent = new StringBuilder("SMSSync-Android/");
             userAgent.append("v");
             userAgent.append(versionName);
             setHeader("User-Agent", userAgent.toString());
