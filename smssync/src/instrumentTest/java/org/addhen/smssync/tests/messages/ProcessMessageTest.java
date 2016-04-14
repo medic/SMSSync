@@ -57,12 +57,12 @@ public class ProcessMessageTest extends BaseTest {
 
     @MediumTest
     public void testShouldPerformTaskEnabledSyncUrl() throws Exception {
-        SyncUrl syncUrlDemo = new SyncUrl();
-        syncUrlDemo.setKeywords("");
-        syncUrlDemo.setSecret("demo");
-        syncUrlDemo.setTitle("ushahidi demo");
-        syncUrlDemo.setUrl("http://demo.ushahidi.com/smssync");
-        mProcessMessage.performTask(syncUrlDemo);
+        SyncUrl syncUrl = new SyncUrl();
+        syncUrl.setKeywords("");
+        syncUrl.setSecret("");
+        syncUrl.setTitle("eyedol demo");
+        syncUrl.setUrl("https://eyedol.crowdmap.com/smssync");
+        mProcessMessage.performTask(syncUrl);
 
         // there is no proper way of testing if a task went successfuly. Right now falling on error
         // message to assert the status. ProcessMessage.performTask needs refactoring
