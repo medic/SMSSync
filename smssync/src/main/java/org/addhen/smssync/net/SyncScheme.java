@@ -40,7 +40,7 @@ import java.util.List;
 public class SyncScheme {
 
     public static enum SyncMethod { POST, PUT };
-    public static enum SyncDataFormat { URLEncoded, JSON };
+    public static enum SyncDataFormat { URLEncoded, JSON, XML, YAML };
     public static enum SyncDataKey { SECRET, FROM, MESSAGE, SENT_TIMESTAMP, MESSAGE_ID, SENT_TO };
 
 
@@ -146,7 +146,7 @@ public class SyncScheme {
 
     /**
      * Get the data format the server is expecting
-     * @return serialization format; JSON, etc.
+     * @return serialization format; JSON, XML, YAML, etc.
      */
     public SyncDataFormat getDataFormat(){
         return format;
@@ -160,6 +160,10 @@ public class SyncScheme {
         switch (format){
             case JSON:
                 return "application/json";
+            case XML:
+                return "application/xml";
+            case YAML:
+                return "application/yaml";
             default:
                 return "application/x-www-form-urlencoded";
         }

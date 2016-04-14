@@ -26,11 +26,14 @@ import org.json.JSONObject;
 import java.util.List;
 
 /**
+ *
  * Class: DataFormatUtil
  * Description: Serialize sync data in appropriate format.
  * Author: Salama A.B. <devaksal@gmail.com>
+ *
  */
 public class DataFormatUtil {
+
     public static String makeJSONString(List<NameValuePair> pairs) throws JSONException{
         JSONObject obj = new JSONObject();
 
@@ -39,5 +42,26 @@ public class DataFormatUtil {
         }
 
         return obj.toString();
+    }
+
+    public static String makeXMLString(List<NameValuePair> pairs, String parentNode, String charset) throws IOException {
+        XmlSerializer serializer = Xml.newSerializer();
+        StringWriter writer = new StringWriter();
+        serializer.setOutput(writer);
+        serializer.startDocument(charset, true);
+        serializer.startTag("", parentNode);
+        for (NameValuePair pair: pairs){
+            serializer.startTag("", pair.getName());
+            serializer.text(pair.getValue());
+            serializer.endTag("", pair.getName());
+        }
+        serializer.endTag("", parentNode);
+        serializer.endDocument();
+        return writer.toString();
+    }
+
+    public static String makeYAMLString(List<NameValuePair> pairs) throws Exception{
+        //TODO: find a great open-source YAML parser
+        throw new Exception("Not Implemented");
     }
 }
