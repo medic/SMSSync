@@ -11,6 +11,7 @@ import org.addhen.smssync.tests.BaseTest;
 import android.preference.Preference;
 import android.test.suitebuilder.annotation.MediumTest;
 import android.test.suitebuilder.annotation.SmallTest;
+import android.test.suitebuilder.annotation.Suppress;
 
 /**
  * Test Process message
@@ -56,6 +57,7 @@ public class ProcessMessageTest extends BaseTest {
     }
 
     @MediumTest
+    @Suppress // This actually connects to a real server and attempts to process the result
     public void testShouldPerformTaskEnabledSyncUrl() throws Exception {
         SyncUrl syncUrl = new SyncUrl();
         syncUrl.setKeywords("");
