@@ -170,7 +170,7 @@ public class MainHttpClient {
                     context.getPackageName(), 0).versionName;
             // Add version name to user agent
             StringBuilder userAgent = new StringBuilder("SMSSync-Android/");
-            userAgent.append("v");
+            userAgent.append('v');
             userAgent.append(versionName);
             setHeader("User-Agent", userAgent.toString());
         } catch (NameNotFoundException e) {
