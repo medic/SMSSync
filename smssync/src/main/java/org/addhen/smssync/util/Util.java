@@ -106,16 +106,6 @@ public class Util {
     }
 
     /**
-     * Converts a string into an int value.
-     *
-     * @param String value - The string to be converted into int value.
-     * @return int
-     */
-    public static int toInt(String value) {
-        return Integer.parseInt(value);
-    }
-
-    /**
      * Capitalize any String given to it.
      *
      * @param String text - The string to be capitalized.

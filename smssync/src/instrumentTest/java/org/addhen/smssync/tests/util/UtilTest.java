@@ -49,15 +49,6 @@ public class UtilTest extends BaseTest {
     }
 
     /**
-     * Test that a string value is converted to it's int value
-     */
-    @SmallTest
-    public void testShouldReturnIntValueOfAString() {
-        final int actual = Util.toInt("2");
-        assertEquals(2, actual);
-    }
-
-    /**
      * Test that a string first letter is capitalized
      */
     @SmallTest
