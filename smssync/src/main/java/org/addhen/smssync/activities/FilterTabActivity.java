@@ -84,10 +84,4 @@ public class FilterTabActivity extends BaseActivity<FilterTabView> {
             ContextMenuInfo menuInfo) {
 
     }
-
-    public void OnDestory() {
-        super.onDestroy();
-
-    }
-
 }
