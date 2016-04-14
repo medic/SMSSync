@@ -40,19 +40,17 @@ public class ScheduleServices {
 
     private PendingIntent pendingIntent;
 
-    private Intent i;
-
     private static final String CLASS_TAG = ScheduleServices.class
             .getSimpleName();
 
-    public ScheduleServices(Context context, Intent intent, Class<?> cls,
+    public ScheduleServices(Context context, Class<?> cls,
             int requestCode, int flags) {
         Logger.log(CLASS_TAG,
                 "ScheduleServices() executing scheduled services ");
         Prefs.loadPreferences(context);
 
         mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        i = new Intent(context, cls);
+        Intent i = new Intent(context, cls);
         pendingIntent = PendingIntent.getBroadcast(context, requestCode, i,
                 flags);
     }
