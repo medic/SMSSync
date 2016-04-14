@@ -21,7 +21,6 @@ package org.addhen.smssync.net;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.text.TextUtils;
 
 import org.addhen.smssync.R;
 import org.addhen.smssync.models.Message;
@@ -31,25 +30,12 @@ import org.addhen.smssync.net.SyncScheme.SyncDataKey;
 import org.addhen.smssync.net.SyncScheme.SyncMethod;
 import org.addhen.smssync.util.DataFormatUtil;
 import org.addhen.smssync.util.Logger;
-import org.addhen.smssync.util.Util;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 import org.json.JSONException;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 public class MessageSyncHttpClient extends MainHttpClient {
