@@ -65,8 +65,6 @@ public class SmsReceiverService extends Service {
 
     private ProcessMessage mProcessMessage;
 
-    private Intent statusIntent;
-
     private static final String CLASS_TAG = SmsReceiverService.class
             .getSimpleName();
 
@@ -92,7 +90,6 @@ public class SmsReceiverService extends Service {
         mProcessMessage = new ProcessMessage(mContext);
 
         Prefs.loadPreferences(mContext);
-        statusIntent = new Intent(ServicesConstants.AUTO_SYNC_ACTION);
         mServiceLooper = thread.getLooper();
         mServiceHandler = new ServiceHandler(this, mServiceLooper);
 
@@ -183,18 +180,19 @@ public class SmsReceiverService extends Service {
 
         // route the sms
         boolean sent = mProcessMessage.routeSms(msg);
+        Intent statusIntent;
         if (!sent) {
             Util.showFailNotification(this, messagesBody,
                     getString(R.string.sending_failed));
             statusIntent = new Intent(ServicesConstants.FAILED_ACTION);
             statusIntent.putExtra("failed", 0);
-            sendBroadcast(statusIntent);
         } else {
+            statusIntent = new Intent(ServicesConstants.AUTO_SYNC_ACTION);
             Util.showFailNotification(this, messagesBody,
                     getString(R.string.sending_succeeded));
             statusIntent.putExtra("sentstatus", 0);
-            sendBroadcast(statusIntent);
         }
+        sendBroadcast(statusIntent);
     }
 
     /**
