@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/ushahidi/SMSSync.png?branch=develop)](https://travis-ci.org/ushahidi/SMSSync)
+[![Build Status](https://travis-ci.org/medic/SMSSync.png?branch=develop)](https://travis-ci.org/medic/SMSSync)
 
 # SMSSync
 
