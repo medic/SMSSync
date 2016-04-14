@@ -147,14 +147,14 @@ public class SmsSyncAppWidgetProvider extends AppWidgetProvider {
             ComponentName me = new ComponentName(this,
                     SmsSyncAppWidgetProvider.class);
             AppWidgetManager mgr = AppWidgetManager.getInstance(this);
-            mgr.updateAppWidget(me, updateDisplay(intent, startId));
+            mgr.updateAppWidget(me, updateDisplay(intent));
 
             if (startId != null) {
                 stopSelfResult(startId);
             }
         }
 
-        private RemoteViews updateDisplay(Intent intent, Integer startId) {
+        private RemoteViews updateDisplay(Intent intent) {
             Log.i(CLASS_TAG, "Updating display");
             RemoteViews views = new RemoteViews(getPackageName(),
                     R.layout.appwidget);
