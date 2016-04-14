@@ -112,6 +112,9 @@ public class Util {
      * @return String
      */
     public static String capitalizeFirstLetter(String text) {
+        if(text == null) return null;
+        if(text.length() == 0) return "";
+        if(text.length() == 1) return text.toUpperCase();
         return text.substring(0, 1).toUpperCase() + text.substring(1);
     }
 
