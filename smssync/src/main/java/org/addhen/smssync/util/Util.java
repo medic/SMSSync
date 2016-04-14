@@ -50,6 +50,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -188,44 +190,33 @@ public class Util {
     /**
      * Get true/false status of JSON payload "success"
      *
-     * @param json_data - The JSON string.
+     * @param json - The JSON response
      * @return boolean - value of "success" JSON parameter
      */
-    public static boolean getJsonSuccessStatus(String json_data) {
-        Log.i(CLASS_TAG, "getJsonSuccessStatus(): Extracting payload JSON data"
-                + json_data);
+    public static boolean getJsonSuccessStatus(JSONObject json) {
+        Log.i(CLASS_TAG, "getJsonSuccessStatus(): Extracting payload JSON data " + json);
         try {
-
-            jsonObject = new JSONObject(json_data);
-            return jsonObject.getJSONObject("payload").getBoolean("success");
-
+            return json.getJSONObject("payload").getBoolean("success");
         } catch (JSONException e) {
             Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
             return false;
         }
-
     }
 
     /**
      * Get JSON payload "error" string
      *
-     * @param json_data - The JSON string.
+     * @param json - The JSON response
      * @return string - value of "error" JSON parameter
      */
-    public static String getJsonError(String json_data) {
-        Log.i(CLASS_TAG, "getJsonError(): Extracting payload JSON data"
-                + json_data);
+    public static String getJsonError(JSONObject json) {
+        Log.i(CLASS_TAG, "getJsonError(): Extracting payload JSON data " + json);
         try {
-
-            jsonObject = new JSONObject(json_data);
-            return jsonObject.getJSONObject("payload").getString("error");
-
+            return json.getJSONObject("payload").getString("error");
         } catch (JSONException e) {
-            // Could not find "error" in JSON response
             Log.e(CLASS_TAG, "JSONException: " + e.getMessage());
-            return "";
+            return null;
         }
-
     }
 
     /**
@@ -495,6 +486,15 @@ public class Util {
         // of the OS since they are inlined at compile time. This is guaranteed
         // behavior.
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB;
+    }
+
+    public static String urlEncode(String unencoded) {
+        try {
+            return URLEncoder.encode(unencoded, "UTF-8");
+        } catch(UnsupportedEncodingException ex) {
+            // Everyone supports UTF-8
+            throw new RuntimeException(ex);
+        }
     }
 
     public void log(String message) {

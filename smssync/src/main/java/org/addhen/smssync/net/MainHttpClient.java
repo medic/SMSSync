@@ -50,31 +50,35 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 
+import org.json.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
+import static org.addhen.smssync.util.Util.urlEncode;
 
 public class MainHttpClient {
 
     public static class Response {
         public final int statusCode;
         public final String statusMessage;
-        public final String content;
-        private Response(int statusCode, String statusMessage, String content) {
+        public final JSONObject content;
+        private Response(int statusCode, String statusMessage, JSONObject content) {
             this.statusCode = statusCode;
             this.statusMessage = statusMessage;
             this.content = content;
         }
+        public boolean isSuccess() { return statusCode >= 200 && statusCode <= 299; }
     }
 
     protected Context context;
@@ -90,8 +94,6 @@ public class MainHttpClient {
     private int timeoutConnection = 60000;
 
     private int timeoutSocket = 60000;
-
-    private static final String DEFAULT_ENCODING = "UTF-8";
 
     private static final String CLASS_TAG = MainHttpClient.class.getSimpleName();
 
@@ -202,7 +204,7 @@ public class MainHttpClient {
     }
 
     public void setEntity(String data) throws Exception {
-        entity = new StringEntity(data, DEFAULT_ENCODING);
+        entity = new StringEntity(data, "UTF-8");
     }
 
     public boolean isMethodSupported(String method) {
@@ -226,13 +228,13 @@ public class MainHttpClient {
         this.method = method;
     }
 
-    public String getQueryString() throws Exception {
+    public String getQueryString() {
         //add query parameters
         String combinedParams = "";
         if (!params.isEmpty()) {
             combinedParams += "?";
             for(NameValuePair p : params) {
-                String paramString = p.getName() + "=" + URLEncoder.encode(p.getValue(), DEFAULT_ENCODING);
+                String paramString = p.getName() + "=" + urlEncode(p.getValue());
                 if(combinedParams.length() > 1) {
                     combinedParams  +=  "&" + paramString;
                 } else {
@@ -243,13 +245,18 @@ public class MainHttpClient {
         return combinedParams;
     }
 
-    public HttpEntity getEntity() throws Exception {
+    public HttpEntity getEntity() {
         // check if entity was explictly set otherwise return params as entity
         if (entity.getContentLength() > 0) {
             return entity;
         } else if (!params.isEmpty()) {
             // construct entity if not already set
-            return new UrlEncodedFormEntity(params, DEFAULT_ENCODING);
+            try {
+                return new UrlEncodedFormEntity(params, "UTF-8");
+            } catch(UnsupportedEncodingException ex) {
+                // Everyone supports UTF-8
+                throw new RuntimeException(ex);
+            }
         }
         return null;
     }
@@ -287,7 +294,7 @@ public class MainHttpClient {
         return sb.toString();
     }
 
-    public Response execute() throws Exception {
+    public Response execute() throws IOException, JSONException {
         InputStream instream = null;
         try {
             prepareRequest();
@@ -302,15 +309,13 @@ public class MainHttpClient {
                 content = convertStreamToString(instream);
             }
 
-            return new Response(statusCode, statusMessage, content);
-        } catch (Exception e) {
-            throw e;
+            return new Response(statusCode, statusMessage, new JSONObject(content));
         } finally {
             if(instream != null) try { instream.close(); } catch(IOException ex) {}
         }
     }
 
-    private void prepareRequest() throws Exception {
+    private void prepareRequest() {
         // setup parameters on request
         if (method.equals("GET")) {
             request = new HttpGet(url + getQueryString());

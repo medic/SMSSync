@@ -60,8 +60,6 @@ public class MessageSyncHttpClient extends MainHttpClient {
 
     private String clientError;
 
-    private String serverSuccessResp;
-
     public MessageSyncHttpClient(
         Context context, SyncUrl syncUrl, Message message, String toNumber
     ) {
@@ -112,42 +110,18 @@ public class MessageSyncHttpClient extends MainHttpClient {
 
     }
 
-    /**
-     * Post sms to the configured sync URL
-     *
-     * @param message  The sms sent
-     * @param toNumber The phone number the sms was sent to
-     * @return boolean
-     */
-    public boolean postSmsToWebService() {
-        Response response = null;
-
+    public Response postSmsToWebService() throws IOException, JSONException {
         try {
-            response = execute();
-        } catch (Exception e) {
+            return execute();
+        } catch (IOException e) {
             log("Request failed", e);
             setClientError("Request failed. " + e.getMessage());
+            throw e;
+        } catch (JSONException e) {
+            log("Request failed", e);
+            setClientError("Request failed. " + e.getMessage());
+            throw e;
         }
-
-        if (response.statusCode < 200 || response.statusCode >= 300) {
-            setServerError("bad http return code", response.statusCode);
-            return false;
-        }
-
-        if (Util.getJsonSuccessStatus(response.content)) {
-            // auto response message is enabled to be received from the
-            // server.
-            setServerSuccessResp(response.content);
-            return true;
-        }
-
-        String payloadError = Util.getJsonError(response.content);
-        if (!TextUtils.isEmpty(payloadError)) {
-            setServerError(payloadError, response.statusCode);
-        }
-
-        return false;
-
     }
 
     /**
@@ -218,14 +192,6 @@ public class MessageSyncHttpClient extends MainHttpClient {
                 statusCode
             )
         );
-    }
-
-    public String getServerSuccessResp() {
-        return this.serverSuccessResp;
-    }
-
-    public void setServerSuccessResp(String serverSuccessResp) {
-        this.serverSuccessResp = serverSuccessResp;
     }
 
     protected void log(String message) {
