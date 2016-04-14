@@ -55,13 +55,7 @@ public class SmsReceiverService extends Service {
 
     private Context mContext;
 
-    private String messagesFrom = "";
-
     private String messagesBody = "";
-
-    private String messagesTimestamp = "";
-
-    private String messagesUuid = "";
 
     private static final Object mStartingServiceSync = new Object();
 
@@ -188,8 +182,6 @@ public class SmsReceiverService extends Service {
                 msg.setUuid(new ProcessSms(mContext).getUuid());
             }
         }
-
-        log("handleSmsReceived() messagesUuid: " + messagesUuid);
 
         // route the sms
         boolean sent = mProcessMessage.routeSms(msg);
