@@ -123,7 +123,7 @@ public class ClientHttpRequest {
             "unchecked", "unused"
     })
     private void postCookies() {
-        StringBuffer cookieList = new StringBuffer();
+        StringBuilder cookieList = new StringBuilder();
 
         for (Iterator i = cookies.entrySet().iterator(); i.hasNext(); ) {
             Map.Entry entry = (Map.Entry) (i.next());
