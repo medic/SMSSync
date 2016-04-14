@@ -19,15 +19,10 @@
  *****************************************************************************/
 package org.addhen.smssync.util;
 
-import android.util.Xml;
-
 import org.apache.http.NameValuePair;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.xmlpull.v1.XmlSerializer;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.util.List;
 
 /**
