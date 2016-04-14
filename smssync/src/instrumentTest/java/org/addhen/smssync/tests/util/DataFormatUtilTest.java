@@ -45,17 +45,6 @@ public class DataFormatUtilTest extends BaseTest {
 
     }
 
-    /**
-     * Test make xml string from List of pair values
-     */
-    @SmallTest
-    public void testMakeXMLString() throws IOException {
-        String actual = DataFormatUtil.makeXMLString(pairs, "zz", HTTP.UTF_8);
-        String expected = "<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><zz><a>b</a><c>d</c></zz>";
-        assertNotNullOrEqual("XML cannot be null and must be formatted correctly", expected, actual);
-    }
-
-
     @Override
     public void tearDown() throws Exception {
         super.tearDown();

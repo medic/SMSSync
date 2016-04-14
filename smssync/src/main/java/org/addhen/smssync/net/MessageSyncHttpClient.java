@@ -137,15 +137,6 @@ public class MessageSyncHttpClient extends MainHttpClient {
                 setEntity(DataFormatUtil.makeJSONString(getParams()));
                 log("setHttpEntity format JSON");
                 break;
-            case XML:
-                //TODO: Make parent node URL specific as well
-                setEntity(DataFormatUtil.makeXMLString(getParams(), "payload", HTTP.UTF_8));
-                log("setHttpEntity format XML");
-                break;
-            case YAML:
-                setEntity(DataFormatUtil.makeYAMLString(getParams()));
-                log("setHttpEntity format YAML");
-                break;
             case URLEncoded:
                 log("setHttpEntity format URLEncoded");
                 setEntity(new UrlEncodedFormEntity(getParams(), HTTP.UTF_8));

@@ -99,54 +99,8 @@ public class SyncSchemeTest extends BaseTest {
     }
 
     @SmallTest
-    public void testSyncWithPOSTAndXML(){
-        syncUrl.setSyncScheme(new SyncScheme(SyncScheme.SyncMethod.POST, SyncScheme.SyncDataFormat.XML));
-
-        MessageSyncHttpClient client = new MessageSyncHttpClient(
-            getContext(), syncUrl, msg, "777777777"
-        );
-        HttpUriRequest req = null;
-        try {
-            req = client.getRequest();
-        } catch (Exception e) {} 
-
-        assertNotNull(req);
-
-        assertEquals(HttpPost.class.getCanonicalName(),req.getClass().getCanonicalName());
-
-        HttpEntity entity = ((HttpPost) req).getEntity();
-
-        assertNotNull(entity);
-
-        assertEquals(StringEntity.class.getCanonicalName(),entity.getClass().getCanonicalName());
-    }
-
-    @SmallTest
     public void testSyncWithPUTAndJSON(){
         syncUrl.setSyncScheme(new SyncScheme(SyncScheme.SyncMethod.PUT, SyncScheme.SyncDataFormat.JSON));
-
-        MessageSyncHttpClient client = new MessageSyncHttpClient(
-            getContext(), syncUrl, msg, "777777777"
-        );
-        HttpUriRequest req = null;
-        try {
-            req = client.getRequest();
-        } catch (Exception e) {} 
-
-        assertNotNull(req);
-
-        assertEquals(HttpPut.class.getCanonicalName(),req.getClass().getCanonicalName());
-
-        HttpEntity entity = ((HttpPut) req).getEntity();
-
-        assertNotNull(entity);
-
-        assertEquals(StringEntity.class.getCanonicalName(),entity.getClass().getCanonicalName());
-    }
-
-    @SmallTest
-    public void testSyncWithPUTAndXML(){
-        syncUrl.setSyncScheme(new SyncScheme(SyncScheme.SyncMethod.PUT, SyncScheme.SyncDataFormat.XML));
 
         MessageSyncHttpClient client = new MessageSyncHttpClient(
             getContext(), syncUrl, msg, "777777777"
