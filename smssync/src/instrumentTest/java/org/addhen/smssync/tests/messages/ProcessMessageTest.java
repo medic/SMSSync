@@ -66,7 +66,8 @@ public class ProcessMessageTest extends BaseTest {
 
         // there is no proper way of testing if a task went successfuly. Right now falling on error
         // message to assert the status. ProcessMessage.performTask needs refactoring
-        assertNull("Could not perform task on enabled sync url ", mProcessMessage.getErrorMessage());
+        assertNull("Could not perform task on enabled sync url: " + mProcessMessage.getErrorMessage(),
+                mProcessMessage.getErrorMessage());
     }
 
     @MediumTest
@@ -80,7 +81,8 @@ public class ProcessMessageTest extends BaseTest {
 
         // there is no proper way of testing if a task went successfuly. Right now falling on error
         // message to assert the status. ProcessMessage.performTask needs refactoring
-        assertNull("Could not perform task on enabled sync url ", mProcessMessage.getErrorMessage());
+        assertNull("Could not perform task on enabled sync url: " + mProcessMessage.getErrorMessage(),
+                mProcessMessage.getErrorMessage());
     }
 
     @MediumTest
