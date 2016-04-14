@@ -36,7 +36,7 @@ import android.os.PowerManager;
 
 public abstract class SmsSyncServices extends IntentService {
 
-    protected static String TAG = SmsSyncServices.class.getSimpleName();
+    protected static final String TAG = SmsSyncServices.class.getSimpleName();
 
     protected static PowerManager.WakeLock mStartingService = null;
 
