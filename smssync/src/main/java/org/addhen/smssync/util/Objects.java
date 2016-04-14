@@ -29,26 +29,6 @@ import java.lang.reflect.Type;
 
 public class Objects {
 
-    /**
-     * Helps to avoid using {@code @SuppressWarnings( "unchecked"})} when casting to a generic type.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T, X extends T> X cast(T o) {
-        return (X) o;
-    }
-
-    public static Type[] getGenericTypes(Object obj) {
-        ParameterizedType superclass = (ParameterizedType) obj.getClass()
-                .getGenericSuperclass();
-        return superclass.getActualTypeArguments();
-    }
-
-    public static Type getGenericType(Object obj, int index) {
-        ParameterizedType superclass = (ParameterizedType) obj.getClass()
-                .getGenericSuperclass();
-        return superclass.getActualTypeArguments()[index];
-    }
-
     @SuppressWarnings("unchecked")
     public static <T> T createInstance(Class<?> targetClass) {
         try {
