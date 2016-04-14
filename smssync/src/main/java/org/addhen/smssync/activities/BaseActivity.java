@@ -77,9 +77,6 @@ public abstract class BaseActivity<V extends View> extends SherlockFragmentActiv
      */
     protected final int menu;
 
-    /**
-     * View class
-     */
     protected final Class<V> viewClass;
 
     protected final int drawerLayoutId;
@@ -88,11 +85,6 @@ public abstract class BaseActivity<V extends View> extends SherlockFragmentActiv
      * ListView resource id
      */
     protected final int listViewId;
-
-    /**
-     * View
-     */
-    protected V view;
 
     protected NavDrawerAdapter navDrawerAdapter;
 
@@ -163,8 +155,6 @@ public abstract class BaseActivity<V extends View> extends SherlockFragmentActiv
         if (listViewId != 0) {
             listView = (ListView) findViewById(listViewId);
         }
-
-        view = Objects.createInstance(viewClass, Activity.class, this);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
