@@ -23,12 +23,14 @@ package org.addhen.smssync.util;
 import org.addhen.smssync.Prefs;
 import org.addhen.smssync.receivers.AutoSyncScheduledReceiver;
 import org.addhen.smssync.receivers.CheckTaskScheduledReceiver;
+import org.addhen.smssync.services.AutoSyncScheduledService;
 import org.addhen.smssync.services.CheckTaskService;
 import org.addhen.smssync.services.ScheduleServices;
 import org.addhen.smssync.services.SmsSyncServices;
 
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 
 /**
  * This will run all enabled and scheduled services.
