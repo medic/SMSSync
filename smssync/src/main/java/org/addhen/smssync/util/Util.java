@@ -74,25 +74,12 @@ public class Util {
 
     private static final String TIME_FORMAT_24_HOUR = "H:mm";
 
-    private static final String EMAIL_PATTERN = "^[_A-Za-z0-9-]+(\\.[_A-Za-z0-9-]+)*@"
-            + "[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
-
-    private static final String URL_PATTERN
-            = "\\b(https?|ftp|file)://[-a-zA-Z0-9+\\$&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
+    private static final Pattern URL_PATTERN =
+            Pattern.compile("\\b(https?|ftp|file)://[-a-zA-Z0-9+\\$&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
 
     private static final int NOTIFY_RUNNING = 100;
 
     private static final String CLASS_TAG = Util.class.getSimpleName();
-
-    public static HashMap<String, String> smsMap = new HashMap<String, String>();
-
-    private static NetworkInfo networkInfo;
-
-    private static JSONObject jsonObject;
-
-    private static Pattern pattern;
-
-    private static Matcher matcher;
 
     /**
      * Joins two strings together.
@@ -129,7 +116,7 @@ public class Util {
         ConnectivityManager connectivity = (ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        networkInfo = connectivity.getActiveNetworkInfo();
+        NetworkInfo networkInfo = connectivity.getActiveNetworkInfo();
 
         if (networkInfo != null && networkInfo.isConnectedOrConnecting()) {
             return true;
@@ -303,23 +290,6 @@ public class Util {
     }
 
     /**
-     * Validates an email address Credits: http://www.mkyong.com/regular-expressions
-     * /how-to-validate-email-address-with-regular-expression/
-     *
-     * @param String - email address to be validated
-     * @return boolean
-     */
-    public static boolean validateEmail(String emailAddress) {
-        Log.i(CLASS_TAG, "validateEmail(): Validate Email address");
-        if (!emailAddress.equals("")) {
-            pattern = Pattern.compile(EMAIL_PATTERN);
-            matcher = pattern.matcher(emailAddress);
-            return matcher.matches();
-        }
-        return false;
-    }
-
-    /**
      * Clear the standard notification alert.
      *
      * @param Context context - The context of the calling activity.
@@ -387,24 +357,9 @@ public class Util {
         return mSDF.format(new Date(timestamp));
     }
 
-    /**
-     * Validate the callback URL
-     *
-     * @param String callbackURL - The callback URL to be validated.
-     * @return int - 0 = well formed URL, 1 = no configured url
-     */
-    public static int validateCallbackUrl(String callbackUrl) {
-
-        if (TextUtils.isEmpty(callbackUrl)) {
-            return 1;
-        }
-
-        pattern = Pattern.compile(URL_PATTERN);
-        matcher = pattern.matcher(callbackUrl);
-        if (matcher.matches()) {
-            return 0;
-        }
-        return 1;
+    public static boolean isValidCallbackUrl(String callbackUrl) {
+        if (TextUtils.isEmpty(callbackUrl)) return false;
+        else return URL_PATTERN.matcher(callbackUrl).matches();
     }
 
     /**

@@ -149,20 +149,12 @@ public class ProcessMessage {
         Prefs.loadPreferences(context);
 
         // validate configured url
-        int status = Util.validateCallbackUrl(syncUrl.getUrl());
+        boolean urlValid = Util.isValidCallbackUrl(syncUrl.getUrl());
 
         Logger.log(CLASS_TAG, "status "+ status);
         Logger.log(CLASS_TAG, "syncURL "+syncUrl.getUrl());
-        if (status == 1) {
-            setErrorMessage(context.getString(R.string.no_configured_url));
-            return;
-        }
-        if (status == 2) {
+        if (!urlValid) {
             setErrorMessage(context.getString(R.string.invalid_url));
-            return;
-        }
-        if (status == 3) {
-            setErrorMessage(context.getString(R.string.no_connection));
             return;
         }
 

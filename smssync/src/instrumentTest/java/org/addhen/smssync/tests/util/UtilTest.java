@@ -57,22 +57,16 @@ public class UtilTest extends BaseTest {
         assertNotNullOrEqual("Could not capitalize the string ", "Hello world where are you", actual);
     }
 
-    /**
-     * Test that a URL should be valid
-     */
     @SmallTest
     public void testShouldCheckUrlIsValid() {
-        final int actual = Util.validateCallbackUrl("http://demo.ushahidi.com/smssync");
-        assertNotNullOrZero("The provided URL is not a valid one", actual);
+        boolean valid = Util.isValidCallbackUrl("http://demo.ushahidi.com/smssync");
+        assertTrue("The provided URL is not a valid one", valid);
     }
 
-    /**
-     * Test that a URL should not be valid
-     */
     @SmallTest
     public void testShouldFailCheckUrlIsInvalid() {
-        final int actual = Util.validateCallbackUrl("demo.ushahidi.com/smssync");
-        assertEquals(1,actual);
+        boolean valid = Util.isValidCallbackUrl("demo.ushahidi.com/smssync");
+        assertFalse(valid);
     }
 
     /**
@@ -81,10 +75,8 @@ public class UtilTest extends BaseTest {
      */
     @SmallTest
     public void testURLWithBasicAuthSpecialCharsIsValid(){
-        assertEquals(
-            Util.validateCallbackUrl("http://admin:$&#%?=~_|!,.;@example.com/test"),
-            0
-        );
+        boolean valid = Util.isValidCallbackUrl("http://admin:$&#%?=~_|!,.;@example.com/test");
+        assertTrue(valid);
     }
 
     /**
