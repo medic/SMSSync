@@ -112,6 +112,12 @@ android {
     }
 }
 
+check {
+    checkstyle {
+	config easy()
+    }
+}
+
 if (project.hasProperty('releaseKeyStore') &&
         project.hasProperty('releaseKeyPassword') &&
         project.hasProperty('releaseKeyStorePassword') &&
@@ -121,8 +127,8 @@ if (project.hasProperty('releaseKeyStore') &&
     android.signingConfigs.releaseSign.storePassword = releaseKeyStorePassword
     android.signingConfigs.releaseSign.keyPassword = releaseKeyPassword
 } else {
-    android.signingConfigs.releaseSign.keyAlias ""
+    android.signingConfigs.releaseSign.keyAlias android.signingConfigs.debug.keyAlias
     android.signingConfigs.releaseSign.storeFile android.signingConfigs.debug.storeFile
-    android.signingConfigs.releaseSign.storePassword ""
-    android.signingConfigs.releaseSign.keyPassword ""
+    android.signingConfigs.releaseSign.storePassword android.signingConfigs.debug.storePassword
+    android.signingConfigs.releaseSign.keyPassword android.signingConfigs.debug.keyPassword
 }
