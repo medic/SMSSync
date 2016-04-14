@@ -65,8 +65,6 @@ public class SmsReceiverService extends Service {
 
     private ProcessMessage mProcessMessage;
 
-    private SmsMessage sms;
-
     private Intent statusIntent;
 
     private static final String CLASS_TAG = SmsReceiverService.class
@@ -162,8 +160,8 @@ public class SmsReceiverService extends Service {
 
         if (bundle != null) {
             SmsMessage[] messages = getMessagesFromIntent(intent);
-            sms = messages[0];
             if (messages != null) {
+                SmsMessage sms = messages[0];
                 // extract message details. phone number and the message body
                 msg.setFrom(sms.getOriginatingAddress());
                 msg.setTimestamp(String.valueOf(sms.getTimestampMillis()));
