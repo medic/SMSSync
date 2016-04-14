@@ -247,7 +247,13 @@ public class ClientHttpRequest {
      * @param file the file to upload
      */
     public void setParameter(String name, File file) throws IOException {
-        setParameter(name, file.getPath(), new FileInputStream(file));
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(file);
+            setParameter(name, file.getPath(), fis);
+        } finally {
+            if(fis != null) try { fis.close(); } catch(Exception ex) {}
+        }
     }
 
     /**
