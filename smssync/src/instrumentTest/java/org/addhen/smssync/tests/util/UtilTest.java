@@ -79,24 +79,6 @@ public class UtilTest extends BaseTest {
         assertTrue(valid);
     }
 
-    /**
-     * Test that email address is valid
-     */
-    @SmallTest
-    public void testThatEmailIsValid() {
-        final boolean valid = Util.validateEmail("henry@ushahidi.com");
-        assertTrue(valid);
-    }
-
-    /**
-     * Test that an email address is not valid
-     */
-    @SmallTest
-    public void testThatEmailIsNotValid() {
-        final boolean invalid = Util.validateEmail("henry@ushahidi");
-        assertFalse(invalid);
-    }
-
     /** Test that an unix timestamp will be formatted to
      * Jun 10, 2013 at 2:34 AM
      */

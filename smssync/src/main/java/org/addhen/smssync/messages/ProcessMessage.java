@@ -151,7 +151,7 @@ public class ProcessMessage {
         // validate configured url
         boolean urlValid = Util.isValidCallbackUrl(syncUrl.getUrl());
 
-        Logger.log(CLASS_TAG, "status "+ status);
+        Logger.log(CLASS_TAG, "urlValid "+ urlValid);
         Logger.log(CLASS_TAG, "syncURL "+syncUrl.getUrl());
         if (!urlValid) {
             setErrorMessage(context.getString(R.string.invalid_url));

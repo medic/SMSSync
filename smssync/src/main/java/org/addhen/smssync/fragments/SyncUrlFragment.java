@@ -198,7 +198,7 @@ public class SyncUrlFragment extends
         if (addSyncUrl != null) {
             if (TextUtils.isEmpty(addSyncUrl.title.getText().toString())) {
                 toastLong(R.string.empty_sync_url_title);
-            } else if (!Util.isValidCallbackUrl(addSyncUrl.url.getText())) {
+            } else if (!Util.isValidCallbackUrl(addSyncUrl.url.getText().toString())) {
                 toastLong(R.string.valid_sync_url);
             } else {
                 noError = true;
