@@ -57,15 +57,10 @@ public class ProcessSms {
     private static final Uri MMS_SMS_CONTENT_URI = Uri
             .parse("content://mms-sms/");
 
-    private static final Uri THREAD_ID_CONTENT_URI = Uri.withAppendedPath(
-            MMS_SMS_CONTENT_URI, "threadID");
-
     private static final Uri CONVERSATION_CONTENT_URI = Uri.withAppendedPath(
             MMS_SMS_CONTENT_URI, "conversations");
 
     private static final String SMS_CONTENT_URI = "content://sms/conversations/";
-
-    private static final String SMS_ID = "_id";
 
     private static final String SMS_CONTENT_INBOX = "content://sms/inbox";
 
