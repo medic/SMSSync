@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/medic/SMSSync.png?branch=develop)](https://travis-ci.org/medic/SMSSync)
+**Please note that this repo is no longer supported — consider using [medic-gateway](https://github.com/medic/medic-gateway) instead.**
 
 # SMSSync
 
